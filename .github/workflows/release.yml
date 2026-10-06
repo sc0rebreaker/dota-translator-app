@@ -43,7 +43,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
       RELEASES_REPO: sc0rebreaker/dota-translator-releases
-      BRIDGE_REPO: ${{ vars.BRIDGE_REPO }}
+      BRIDGE_REPO: ${{ vars.BRIDGE_REPO || 'sc0rebreaker/dota-translator' }}
       # Optional. With it, every installer is sent to VirusTotal and the release
       # notes link to the report; without it, nothing is sent and nothing breaks.
       VT_API_KEY: ${{ secrets.VT_API_KEY }}
@@ -88,9 +88,13 @@ jobs:
             if [ -n "$vt" ]; then echo "Antivirus report for exactly this file (VirusTotal): $vt"; echo; fi
             echo "Built by GitHub Actions from a tagged commit, not on anybody's PC."
           } > notes.md
-          for repo in "$RELEASES_REPO" $BRIDGE_REPO; do
+          publish() {
             # Anything already published under this tag is a failed attempt.
-            while gh release view "$GITHUB_REF_NAME" --repo "$repo" >/dev/null 2>&1; do gh release delete "$GITHUB_REF_NAME" --repo "$repo" --yes --cleanup-tag; done
-            gh release create "$GITHUB_REF_NAME" --repo "$repo" --title "Dota Translator ${GITHUB_REF_NAME#v}" --notes-file notes.md \
+            while gh release view "$GITHUB_REF_NAME" --repo "$1" >/dev/null 2>&1; do gh release delete "$GITHUB_REF_NAME" --repo "$1" --yes --cleanup-tag; done
+            gh release create "$GITHUB_REF_NAME" --repo "$1" --title "Dota Translator ${GITHUB_REF_NAME#v}" --notes-file notes.md \
               dist/*.exe dist/*.exe.blockmap dist/latest.yml
-          done
+          }
+          publish "$RELEASES_REPO"
+          # The bridge (see the top): best effort. Once the old repository is
+          # private it fails, and that must not fail the release.
+          if [ -n "$BRIDGE_REPO" ]; then publish "$BRIDGE_REPO" || echo "::warning::bridge release to $BRIDGE_REPO failed"; fi

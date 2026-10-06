@@ -1,16 +1,18 @@
-# Keeps the website in step with docs/.
+# The website (dotatranslator.live) is served by GitHub Pages from the PUBLIC
+# repository sc0rebreaker/dota-translator-releases, branch gh-pages - this
+# source repository is private, and a free plan has no Pages for that.
 #
-# GitHub Pages serves the gh-pages branch, which is nothing but the docs/
-# folder of master. (It is a branch rather than the "/docs folder" setting
-# because pushing a gh-pages branch is what switched Pages ON without
-# anybody having to change a repository setting.) Whenever docs/ changes
-# on master, this rebuilds that branch from it.
-name: pages
+# It runs on a RELEASE TAG (and by hand), never on an ordinary push: docs/
+# here describes the version being worked on, which must not go live before
+# the download does. Each run makes gh-pages exactly docs/ of the tagged
+# commit and force-pushes it there with RELEASES_TOKEN (Contents read/write
+# on the releases repository). docs/CNAME keeps the custom domain.
+name: website
 
 on:
   push:
-    branches: [master]
-    paths: ['docs/**', '.github/workflows/pages.yml']
+    tags: ['v*']
+  workflow_dispatch:
 
 # Nothing by default: the job below is given exactly what it needs.
 permissions: {}
@@ -18,13 +20,17 @@ permissions: {}
 jobs:
   publish:
     permissions:
-      contents: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - name: docs/ becomes gh-pages
+      - name: docs/ becomes gh-pages of the releases repository
+        env:
+          TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          git subtree split --prefix docs -b gh-pages
-          git push -f origin gh-pages
+          if [ -z "$TOKEN" ]; then echo "::error::RELEASES_TOKEN is not set"; exit 1; fi
+          test -f docs/CNAME
+          git subtree split --prefix docs -b site
+          git push -f "https://x-access-token:${TOKEN}@github.com/sc0rebreaker/dota-translator-releases.git" site:gh-pages
