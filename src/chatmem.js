@@ -1,0 +1,251 @@
+// Chat lines read out of Dota's memory.
+//
+// The game keeps each line COMPLETE and pre-formatted as one UTF-8 string
+// (measured 2026-09-20 - see NOTES-2026-09-20-memory.md):
+//
+//     "  [Allies] unc status: не фидите, у них варды на руне"
+//
+// so nothing here has to reassemble a line from fields. What it DOES have
+// to do is tell a real line from the freed and half-overwritten memory the
+// scan also turns up, and tell a line it has already seen from one that is
+// new - neither of which the log-based source ever had to worry about.
+//
+// Pure: no process access, no I/O. The scanning lives in memsource.js so
+// that everything decided here can be tested without Dota running.
+
+// Dota tags every line with the channel it went to. The list is CLOSED on
+// purpose - an unknown tag is how a false positive gets in - but a closed
+// list fails silently, which is the worse bug: a channel we have not
+// named would simply never be translated and nobody would know why. So
+// `readMemoryFindings` reports unknown tags separately and the watcher
+// logs them. If a real channel is missing, that log is where it shows up.
+//
+// MEASURED: "Allies" is the tag Dota puts on team chat. The others are
+// from the game's own vocabulary and are NOT yet confirmed against
+// memory - see `unknownTags` if one of them is wrong.
+export const CHANNELS = {
+  Allies: 'team',
+  All: 'all',
+  Everyone: 'all',
+  Team: 'team',
+  Spectators: 'spectators',
+  Coaches: 'spectators',
+};
+
+// A chat line is short. Dota caps what a player can send well below this;
+// anything longer is a run of memory that happens to start like a line.
+export const MAX_LINE = 320;
+export const MAX_NAME = 64;
+
+const LINE_RE = /^\[([A-Za-z]+)\]\s+(.+?):\s(.+)$/;
+
+// ---------------------------------------------------------------------
+// Panorama's markup copy of a line - the one that covers EVERY channel.
+//
+// MEASURED: the plain pre-formatted string carries a tag for team chat
+// ("  [Allies] name: text") and NO TAG AT ALL for all-chat ("   name:
+// text"). Anchoring on "[Allies] " therefore found team chat and missed
+// every word of all-chat, silently. An untagged "name: text" is far too
+// common a shape in 4 GB of memory to scan for on its own.
+//
+// The markup wraps every line whatever the channel, so it is one anchor
+// for both, and it states the player's colour slot as well:
+//
+//   [Allies] <span class="ChatPersona"><span class="PlayerColor4">
+//   <font color='#FF6B00'>Pablo</font></span></span></span>: Pushing mid
+//   ...ChatTarget"> <span class="ChatPersona"><span class="PlayerColor0">
+//   <font color='#3375FF'>unc status</font></span></span></span>: hello
+export const PERSONA = 'class="ChatPersona"';
+
+// The opening bracket is OPTIONAL: the scanner looks back a bounded
+// number of bytes from the anchor, so a long enough name can push "["
+// out of the window and leave "Allies] " behind. The closing bracket is
+// what makes this unambiguous - the all-chat form ends "ChatTarget\"> ",
+// which cannot match.
+// Searched for ANYWHERE in the look-back window, last match winning -
+// not anchored at the end, because the anchor is `class="ChatPersona"`
+// and the bytes right before it are `<span `, not the tag.
+//
+// The opening bracket is OPTIONAL: the scanner looks back a bounded
+// number of bytes, so a long name can push "[" out of the window and
+// leave "Allies] " behind. The CLOSING bracket is what keeps this
+// unambiguous - the all-chat form reads `ChatTarget"> `, which has none.
+const TAG_BEFORE = /\[?([A-Za-z]+)\]/g;
+const COLOR_SLOT = /class="PlayerColor(\d+)"/;
+const NAME_IN_FONT = /<font[^>]*>([^<]*)<\/font>/;
+const TAGS_ANYWHERE = /<[^>]*>/g;
+
+/**
+ * Parse Panorama's markup form of a chat line.
+ * Returns the same shape parseMemoryChatLine does, plus `slot`.
+ */
+export function parseMarkupChatLine(raw) {
+  if (typeof raw !== 'string') return null;
+  const at = raw.indexOf(PERSONA);
+  if (at < 0) return null;
+
+  const before = raw.slice(0, at);
+  const rest = raw.slice(at);
+
+  // An untagged line is all-chat; that is what the measurement showed,
+  // and it is why this parser exists.
+  TAG_BEFORE.lastIndex = 0;              // the regex is /g and is reused
+  let tagged = null;
+  for (let m = TAG_BEFORE.exec(before); m; m = TAG_BEFORE.exec(before)) tagged = m;
+  const channelTag = tagged ? tagged[1] : 'All';
+  const channel = CHANNELS[channelTag];
+  if (!channel) return null;
+
+  const named = NAME_IN_FONT.exec(rest);
+  if (!named) return null;
+  const name = named[1].trim();
+  if (!name || name.length > MAX_NAME) return null;
+
+  // The message follows the closing tags and a ": ". Take everything
+  // after the LAST such break so a name containing ": " cannot split it.
+  const afterName = rest.slice(named.index + named[0].length);
+  const colon = afterName.indexOf(': ');
+  if (colon < 0) return null;
+  let text = afterName.slice(colon + 2);
+
+  text = text.replace(TAGS_ANYWHERE, '').trim();
+  if (!text || text.length > MAX_LINE) return null;
+  if (UNPRINTABLE.test(text) || UNPRINTABLE.test(name)) return null;
+
+  const slotted = COLOR_SLOT.exec(rest);
+  const slot = slotted ? Number(slotted[1]) : null;
+
+  return { channel, channelTag, name, text, slot };
+}
+
+// Panorama keeps a SECOND copy of every line as its own markup, carrying
+// the player colour and slot. We do not read that copy - the plain one
+// says the same thing without a parser - but we must recognise it so it
+// is not mistaken for a player whose name is "<span class=...".
+const MARKUP = /[<>]/;
+
+// Freed memory decodes into runs of replacement chars and control bytes.
+// A real line is printable.
+const UNPRINTABLE = /[\u0000-\u0008\u000b-\u001f\u007f\ufffd]/;
+
+/**
+ * Parse one candidate string found in memory.
+ * Returns {channel, channelTag, name, text} or null if it is not a line.
+ */
+export function parseMemoryChatLine(raw) {
+  if (typeof raw !== 'string') return null;
+  const line = raw.trim();
+  if (!line || line.length > MAX_LINE) return null;
+  if (MARKUP.test(line) || UNPRINTABLE.test(line)) return null;
+
+  const m = LINE_RE.exec(line);
+  if (!m) return null;
+
+  const [, tag, name, text] = m;
+  const channel = CHANNELS[tag];
+  if (!channel) return null;
+  if (!name || name.length > MAX_NAME) return null;
+  if (!text.trim()) return null;
+
+  return { channel, channelTag: tag, name: name.trim(), text: text.trim() };
+}
+
+/**
+ * Which of these lines are NEW.
+ *
+ * Dedup is by CONTENT, not by how many copies turned up. The first
+ * version counted copies, on the theory that a rising count meant the
+ * player had said it again - but the number of buffers a line lives in is
+ * not fixed (one line was found in three places at once, and that was one
+ * message), so a count cannot tell "said twice" from "copied twice". Every
+ * such rule turns ordinary buffer churn into messages nobody sent, and a
+ * translator inventing chat is worse than one that is terse.
+ *
+ * THE PRICE, stated plainly: if the same player sends the exact same words
+ * twice while the first is still remembered, the second is not shown
+ * again. The test session had "иди мид" three times running and this
+ * shows it once. That is the right trade - the reader loses nothing but a
+ * repetition they can already see on screen.
+ *
+ * `capacity` bounds it. A match is finite, so this never grows without
+ * limit; when it does roll over, a line said again much later is new
+ * again, which is what you would want.
+ */
+export function createLineTracker({ capacity = 400 } = {}) {
+  /** @type {Set<string>} */
+  let seen = new Set();
+  let order = [];
+
+  function keyOf(line) {
+    return `${line.channelTag}\u0000${line.name}\u0000${line.text}`;
+  }
+
+  return {
+    /**
+     * @param {Array} lines every line this scan found, duplicates included
+     * @returns {Array} the ones not shown before, in the order given
+     */
+    accept(lines) {
+      const fresh = [];
+      for (const line of lines || []) {
+        const k = keyOf(line);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        order.push(k);
+        fresh.push(line);
+      }
+      while (order.length > capacity) seen.delete(order.shift());
+      return fresh;
+    },
+
+    /** A new match: nothing carries over. */
+    reset() {
+      seen = new Set();
+      order = [];
+    },
+
+    get size() {
+      return seen.size;
+    },
+  };
+}
+
+/**
+ * A string that is SHAPED like a chat line but carries a tag we do not
+ * know. Reported rather than discarded, so a channel missing from
+ * CHANNELS can be found by looking instead of by guessing.
+ */
+export function unknownChannelTag(raw) {
+  if (typeof raw !== 'string') return null;
+  const line = raw.trim();
+  if (!line || line.length > MAX_LINE) return null;
+  if (MARKUP.test(line) || UNPRINTABLE.test(line)) return null;
+  const m = LINE_RE.exec(line);
+  if (!m) return null;
+  const [, tag, name, text] = m;
+  if (CHANNELS[tag]) return null;
+  if (!name || name.length > MAX_NAME || !text.trim()) return null;
+  return tag;
+}
+
+/**
+ * Turn the scanner's raw findings into the lines worth translating.
+ * Kept separate from the tracker so a caller can see what was rejected.
+ */
+export function readMemoryFindings(raws) {
+  const lines = [];
+  const unknownTags = [];
+  let rejected = 0;
+  for (const raw of raws || []) {
+    // Markup first: it is the form that covers every channel, and the
+    // plain form of an all-chat line carries no tag to anchor on.
+    const markup = parseMarkupChatLine(raw);
+    if (markup) { lines.push(markup); continue; }
+    const line = parseMemoryChatLine(raw);
+    if (line) { lines.push(line); continue; }
+    const tag = unknownChannelTag(raw);
+    if (tag && !unknownTags.includes(tag)) unknownTags.push(tag);
+    rejected++;
+  }
+  return { lines, rejected, unknownTags };
+}

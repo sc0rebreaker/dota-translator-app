@@ -1,0 +1,81 @@
+{
+  "name": "dota-translator",
+  "version": "0.7.0",
+  "private": true,
+  "description": "Russian Dota 2 chat, in English, live, above the game's own chat.",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "watch": "node src/watch.js",
+    "test": "node test.js",
+    "demo": "node src/demo.js",
+    "doctor": "node src/doctor.js",
+    "dist": "electron-builder --win nsis --publish never",
+    "release": "electron-builder --win nsis --publish always"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "productName": "Dota Translator",
+  "author": "Kristjan Ranna",
+  "build": {
+    "appId": "com.sc0rebreaker.dota-translator",
+    "productName": "Dota Translator",
+    "files": [
+      "src/**/*",
+      "offsets.json",
+      "LICENSE.md",
+      "package.json",
+      "!src/demo.js",
+      "!src/doctor.js",
+      "!src/watch.js",
+      "!src/memscan.ps1",
+      "docs/key.html",
+      "docs/logo-64.webp",
+      "docs/favicon.ico"
+    ],
+    "asarUnpack": [
+      "src/*.ps1",
+      "docs/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Dota-Translator-Setup.${ext}",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Dota Translator",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "sc0rebreaker",
+        "repo": "dota-translator-releases",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

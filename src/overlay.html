@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  /* A second chat box, drawn over the game: the same lines Dota's own
+     chat shows, in English. Made to look like it belongs there - dark,
+     square, names in the players' own colours - and to cost nothing
+     while nothing is being said: no blur, no animation that runs on its
+     own, and an empty box is not drawn at all. */
+  :root {
+    --ink: #e8e6df;
+    --dim: rgba(232, 230, 223, 0.55);
+    --allies: #a5d67a;
+    --all: #c9c9c9;
+    --panel-top: rgba(14, 17, 22, 0.78);
+    --panel-bot: rgba(14, 17, 22, 0.62);
+    --edge: rgba(255, 255, 255, 0.07);
+    --warn: #ffb454;
+    --size: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: "Radiance", "Segoe UI", Roboto, system-ui, sans-serif;
+    -webkit-user-select: none;
+    cursor: default;
+  }
+  body { display: flex; flex-direction: column; }
+  body.bottom { justify-content: flex-end; }
+  #box {
+    background: linear-gradient(var(--panel-top), var(--panel-bot));
+    border: 1px solid var(--edge);
+    border-left: 2px solid rgba(165, 214, 122, 0.55);
+    padding: 6px 10px 7px;
+    color: var(--ink);
+    font-size: var(--size);
+    line-height: 1.32;
+    /* The game is behind this, so the text needs its own contrast. */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 1px rgba(0, 0, 0, 0.9);
+  }
+  #box:empty { display: none; }
+  .row { padding: 1px 0; transition: opacity 500ms linear; }
+  .row.out { opacity: 0; }
+  .face { display: inline-block; vertical-align: middle; width: var(--face-w, 2.4em); aspect-ratio: 16 / 9; margin-right: var(--face-gap, 6px); position: relative; top: -0.06em; }
+  .face img { width: 100%; height: 100%; display: block; object-fit: cover; border: 1px solid rgba(0, 0, 0, 0.75); border-radius: 1px; }
+  .tag { color: var(--all); margin-right: 5px; }
+  .team .tag { color: var(--allies); }
+  .name { font-weight: 600; margin-right: 5px; }
+  .pending .say { color: var(--dim); font-style: italic; }
+  /* A line that could NOT be translated is still what was said, and it is
+     all the player is going to get: full brightness. It used to be dimmed
+     like a line still waiting, and with Google down for an hour every line
+     on the screen was - the user: "did you change colors again? our
+     translated section seems darker". */
+  .plain .say { color: inherit; }
+  .orig { color: var(--dim); font-size: 0.86em; }
+  /* COVER mode: a strip over each translated line of the game's own
+     chat, in that line's exact slot. Dark and nearly opaque, because
+     the Russian is still being drawn underneath it. */
+  #cover { position: absolute; left: 0; right: 0; bottom: 0; top: 0; pointer-events: none; }
+  .strip {
+    position: absolute;
+    display: flex; align-items: center;
+    white-space: nowrap; overflow: hidden;
+    /* Only as dark as hiding the line underneath needs, fading out to the
+       right so it does not read as a box with an edge. */
+    background: linear-gradient(90deg, rgba(12, 15, 19, 0.9) 0, rgba(12, 15, 19, 0.9) calc(100% - 28px), rgba(12, 15, 19, 0) 100%);
+    padding-right: 30px;
+    border-radius: 3px 0 0 3px;
+    transition: background 700ms linear;
+    color: #fff; font-weight: 700;
+    /* Outlined as well as shadowed, as the game's chat is: once the box
+       has gone this is all that stands between the text and the terrain. */
+    text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000, 0 2px 3px rgba(0, 0, 0, 0.9);
+  }
+  /* The game's own line has faded: nothing left to hide, so no box -
+     bare text with a shadow, which is all Dota's chat is. */
+  .strip.bare { background: none; }
+  .strip.bare .orig { color: rgba(232, 230, 223, 0.8); }
+  .strip .tag { color: #fff; }
+  .strip .orig { font-weight: 400; margin-left: 0.4em; }
+  .strip.wrap { white-space: normal; align-items: flex-start; line-height: 1.25; }
+  /* ABOVE mode: no panel at all. Nothing of the game's is under these
+     lines, so they can be what the game's own chat is: outlined text. */
+  body.bare #box { background: none; border: none; padding: 0; font-weight: 700; color: #FAEAC9; opacity: 1 !important;
+    /* The game's own: "text-shadow: 1px 1.5px 0px 2 #000" - down and right,
+       hard, no outline. An outline all round made the letters look bigger. */
+    text-shadow: 1px 1.5px 0 #000, 1.5px 2px 0 rgba(0, 0, 0, 0.7); }
+  body.bare .row { padding: 0; white-space: nowrap; transition: opacity 250ms linear; }
+  /* The game's own: tag #fbe6b9, names 20 to the text's 18. */
+  body.bare .tag, body.bare .team .tag { color: #fbe6b9; }
+  body.bare .name { font-size: 1.017em; margin: 0; }
+  body.bare .tag + .name { margin-left: calc(3.7 * var(--u, 1px)); }
+  body.bare .tag, body.bare .team .tag { margin-right: 0; }
+  body.bare .colon { margin: 0 calc(4.3 * var(--u, 1px)) 0 calc(0.5 * var(--u, 1px)); }
+  /* The game's portrait: 40 x 23 units with its black border inside. */
+  body.bare .face { aspect-ratio: auto; height: calc(24 * var(--u, 1px)); top: 0; }
+  /* MEASURED: the game draws the same picture 4% darker than a browser does. */
+  body.bare .face img { box-sizing: border-box; border: 1px solid #000; border-radius: 0; filter: brightness(0.96); }
+  body.bare .orig { font-weight: 400; color: rgba(250, 234, 201, 0.8); }
+  /* Waiting for its English: ITALIC, and nothing else. It was also faded to
+     75%, which is a blink when the model answers in a second and looked
+     broken when it took five (the user: "the faded messages look weird"). */
+  body.bare .pending .say { color: inherit; }
+  .status { color: var(--warn); font-size: 13px; padding: 1px 0; transition: opacity 500ms linear; }
+  .status.out { opacity: 0; }
+  .note .say { color: var(--dim); font-style: italic; }
+  body.bare .note .say { color: inherit; }
+</style>
+</head>
+<body>
+  <div id="box"></div>
+  <div id="cover"></div>
+  <script src="overlay.js"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+# Builds the Windows installer and publishes it to the PUBLIC releases
+# repository, sc0rebreaker/dota-translator-releases (the owner creates it).
+# This source repository is to become private; installed copies read their
+# updates from the releases repository (package.json build.publish), so that
+# is where the installer, its blockmap and latest.yml go.
+#
+# Push a tag that matches the version in package.json:
+#
+#   npm version patch        (bumps package.json, commits, tags vX.Y.Z)
+#   git push origin master --follow-tags
+#
+# The build does NOT publish through electron-builder (v0.2.0: its uploader
+# raced itself and split one release in two). ONE release is made with
+# GitHub's CLI, in the releases repository, with RELEASES_TOKEN: a
+# fine-grained token with Contents read/write on that repository (and on this
+# one too while BRIDGE_REPO is set - see below).
+#
+# ARTIFACT ATTESTATION IS GONE. It was here while the source was public; on a
+# free plan GitHub does not attest from a private repository, and a statement
+# that names a commit nobody can read proves little. The SHA-256 and the
+# VirusTotal report stay.
+#
+# BRIDGE_REPO (a repository VARIABLE, not a secret): every copy installed up
+# to 0.6.10 looks for updates in sc0rebreaker/dota-translator's releases. Set
+# BRIDGE_REPO=sc0rebreaker/dota-translator for the first release from here and
+# the same files go there too, so those copies update to a version that looks
+# in the new place. It only works while that repository is still PUBLIC:
+# release the bridge version BEFORE making it private.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+# Nothing by default: the job below is given exactly what it needs.
+permissions: {}
+
+jobs:
+  windows:
+    permissions:
+      contents: read
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+      RELEASES_REPO: sc0rebreaker/dota-translator-releases
+      BRIDGE_REPO: ${{ vars.BRIDGE_REPO }}
+      # Optional. With it, every installer is sent to VirusTotal and the release
+      # notes link to the report; without it, nothing is sent and nothing breaks.
+      VT_API_KEY: ${{ secrets.VT_API_KEY }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: The tag must be the version being built
+        shell: bash
+        run: |
+          want="v$(node -p "require('./package.json').version")"
+          if [ "$want" != "$GITHUB_REF_NAME" ]; then echo "tag $GITHUB_REF_NAME, package.json $want"; exit 1; fi
+      - name: There must be a token for the releases repository
+        shell: bash
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "::error::RELEASES_TOKEN is not set"; exit 1; fi
+      - run: npm run dist
+      - name: One release, made once, in the releases repository
+        shell: bash
+        run: |
+          sum=$(sha256sum dist/*.exe | cut -d" " -f1)
+          # The same file, looked at by ~70 antivirus engines. A file this size
+          # goes to an upload address VirusTotal hands out. NEVER fails the release.
+          vt=""
+          if [ -n "$VT_API_KEY" ]; then
+            url=$(curl -fsS -m 60 -H "x-apikey: $VT_API_KEY" https://www.virustotal.com/api/v3/files/upload_url | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).data" || true)
+            if [ -n "$url" ] && curl -fsS -m 900 -H "x-apikey: $VT_API_KEY" -F "file=@$(ls dist/*.exe | head -1)" "$url" >/dev/null; then
+              vt="https://www.virustotal.com/gui/file/$sum"
+            else
+              echo "::warning::VirusTotal upload did not go through; the release goes out without the link"
+            fi
+          fi
+          {
+            echo "SHA-256 of Dota-Translator-Setup.exe:"
+            echo
+            echo "    $sum"
+            echo
+            if [ -n "$vt" ]; then echo "Antivirus report for exactly this file (VirusTotal): $vt"; echo; fi
+            echo "Built by GitHub Actions from a tagged commit, not on anybody's PC."
+          } > notes.md
+          for repo in "$RELEASES_REPO" $BRIDGE_REPO; do
+            # Anything already published under this tag is a failed attempt.
+            while gh release view "$GITHUB_REF_NAME" --repo "$repo" >/dev/null 2>&1; do gh release delete "$GITHUB_REF_NAME" --repo "$repo" --yes --cleanup-tag; done
+            gh release create "$GITHUB_REF_NAME" --repo "$repo" --title "Dota Translator ${GITHUB_REF_NAME#v}" --notes-file notes.md \
+              dist/*.exe dist/*.exe.blockmap dist/latest.yml
+          done

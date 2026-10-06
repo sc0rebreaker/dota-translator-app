@@ -1,0 +1,26 @@
+{
+  "index.html": {
+    "file": "assets/index-DSmjFpgo.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/HeroPreview.tsx",
+      "src/HeroPreview.tsx",
+      "src/HeroPreview.tsx",
+      "src/HeroPreview.tsx"
+    ],
+    "css": [
+      "assets/index-DA8QX75s.css"
+    ]
+  },
+  "src/HeroPreview.tsx": {
+    "file": "assets/HeroPreview-BpVoHniz.js",
+    "name": "HeroPreview",
+    "src": "src/HeroPreview.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
+    ]
+  }
+}

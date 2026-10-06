@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; img-src 'self'">
+<title>Dota Translator</title>
+<style>
+  /* The setup window: where a player who has never opened a config file
+     signs in and picks the look. Dressed as the landing page is, but with no web
+     fonts - this window must look right with no internet at all. */
+  :root {
+    --bg: #0a0d10; --panel: #11161b; --line: rgba(200, 215, 230, 0.12); --line-strong: rgba(200, 215, 230, 0.24);
+    --text: #f4f6f8; --dim: rgba(244, 246, 248, 0.68); --faint: #8b95a3;
+    --accent: #f0b44c; --accent-ink: #231703; --good: #7bd88f; --warn: #e58b6b;
+    --serif: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    --sans: 'Segoe UI', system-ui, sans-serif;
+    --mono: 'Cascadia Mono', Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  html { overflow-x: hidden; overflow-y: auto; }
+  body { overflow: visible; }
+  body { background: radial-gradient(700px 360px at 85% -10%, rgba(240, 180, 76, 0.12), transparent 60%), var(--bg); color: var(--text); font-family: var(--sans); font-size: 15.5px; line-height: 1.5; padding: 30px 38px 26px; display: flex; flex-direction: column; -webkit-user-select: none; user-select: none; }
+  .brand { font-family: var(--serif); font-size: 19px; color: var(--dim); display: flex; align-items: center; gap: 10px; }
+  .brand b { color: var(--accent); font-weight: 500; font-style: italic; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: 36px; line-height: 1.08; margin-top: 18px; letter-spacing: -0.01em; }
+  h1 span { color: var(--accent); font-style: italic; }
+  .sub { color: var(--dim); margin-top: 12px; }
+  label { display: block; margin-top: 24px; font-weight: 600; font-size: 14px; }
+  .keyrow { display: flex; gap: 8px; margin-top: 8px; }
+  input[type=password], input[type=text] { flex: 1; min-width: 0; background: var(--panel); color: var(--text); border: 1px solid var(--line-strong); border-radius: 10px; padding: 12px 14px; font-family: var(--mono); font-size: 14px; outline: none; -webkit-user-select: text; user-select: text; }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(240, 180, 76, 0.2); }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); padding: 11px 15px; font-weight: 600; white-space: nowrap; }
+  button:hover { border-color: var(--text); }
+  button.solid { background: var(--accent); color: var(--accent-ink); border-color: transparent; padding: 13px 20px; font-size: 16px; }
+  button.solid:hover { background: #f6c163; }
+  button:disabled { opacity: 0.55; cursor: default; }
+  .link { background: none; border: none; color: var(--accent); padding: 0; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .help { margin-top: 10px; color: var(--faint); font-size: 13.5px; }
+  .have { margin-top: 10px; font-size: 13.5px; color: var(--good); display: none; }
+  .mode { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mode label { margin: 0; font-weight: 400; font-size: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: flex; gap: 9px; align-items: flex-start; color: var(--dim); }
+  .mode label b { display: block; color: var(--text); font-weight: 600; }
+  .mode input { margin-top: 3px; accent-color: var(--accent); }
+  .mode.say { margin-top: 8px; }
+  .mode.three { grid-template-columns: 1fr 1fr 1fr; }
+  .sayblock { margin-top: 22px; }
+  .sayblock h3 { font-size: 14px; font-weight: 600; }
+  .sayblock .hint { color: var(--faint); font-size: 12.5px; margin-top: 8px; }
+  .mode label:has(input:checked) { border-color: var(--accent); background: rgba(240, 180, 76, 0.06); }
+  /* More settings: shut until asked for. The first thing a new player
+     sees stays "sign in, play". */
+  details.more { margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; }
+  details.more summary { cursor: pointer; list-style: none; padding: 11px 14px; font-weight: 600; font-size: 14px; color: var(--dim); display: flex; justify-content: space-between; }
+  details.more summary::-webkit-details-marker { display: none; }
+  details.more summary::after { content: '+'; color: var(--accent); font-weight: 400; font-size: 18px; line-height: 1; }
+  details.more[open] summary::after { content: '\2013'; }
+  details.more[open] summary { color: var(--text); border-bottom: 1px solid var(--line); }
+  .more .body { padding: 4px 14px 14px; display: grid; gap: 14px; }
+  .more h3 { font-size: 13px; font-weight: 600; margin-top: 10px; color: var(--text); }
+  .more .hint { color: var(--faint); font-size: 12.5px; margin-top: 2px; }
+  .langs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 10px; margin-top: 8px; }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: var(--dim); font-weight: 400; margin: 0; cursor: pointer; }
+  .check input { margin-top: 3px; accent-color: var(--accent); }
+  .check b { color: var(--text); font-weight: 600; display: block; }
+  .size { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .size input { flex: 1; accent-color: var(--accent); }
+  .size output { font-family: var(--mono); font-size: 13px; color: var(--text); min-width: 44px; text-align: right; }
+  .keys { display: grid; grid-template-columns: 1fr auto auto; gap: 8px 10px; align-items: center; margin-top: 8px; font-size: 14px; color: var(--dim); }
+  .keys button.cap { font-family: var(--mono); font-size: 13px; min-width: 150px; padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+  .keys button.cap.wait { border-color: var(--accent); color: var(--accent); }
+  .files { border-top: 1px solid var(--line); padding-top: 12px; color: var(--faint); font-size: 12.5px; }
+  #result { margin-top: 18px; border-radius: 10px; padding: 12px 14px; font-size: 14.5px; display: none; border: 1px solid var(--line-strong); border-left-width: 3px; }
+  #result.ok { display: block; border-left-color: var(--good); background: rgba(123, 216, 143, 0.07); }
+  #result.bad { display: block; border-left-color: var(--warn); background: rgba(229, 139, 107, 0.07); }
+  #result.busy { display: block; border-left-color: var(--accent); color: var(--dim); }
+  #result code { font-family: var(--mono); color: var(--text); }
+  .actions { margin-top: 0; padding-top: 24px; display: flex; gap: 10px; align-items: center; }
+  .actions .grow { flex: 1; }
+  /* The note under the block it is about (the user: "the saved is in the very bottom of the ui, instead of under it like other boxes have"). */
+  .note { color: var(--good); min-height: 1lh; margin-top: 6px; }
+  .note.bad { color: var(--warn); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--faint); margin-right: 8px; vertical-align: 1px; }
+  .dot.ok { background: var(--good); } .dot.wait { background: var(--accent); } .dot.bad { background: var(--warn); }
+  i.L { font-style: inherit; }
+  .acct { margin-top: 18px; border: 1px solid var(--line-strong); border-radius: 10px; padding: 12px 14px; background: var(--panel); }
+  .acct h3 { font-size: 14px; font-weight: 600; }
+  .acctrow { display: flex; gap: 10px; align-items: center; }
+  .acctrow.small { margin-top: 8px; font-size: 13px; }
+  .acctrow .grow { flex: 1; }
+  .away { color: #e58b6b; margin-top: 8px; }
+  #hwidBlock .acctrow { gap: 12px; }
+  .trust { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--faint); font-size: 12.5px; }
+</style>
+</head>
+<body>
+  <div class="brand"><img src="logo.webp" width="28" height="28" alt=""><span>Dota <b>Translator</b></span></div>
+  <h1 id="headline">Ready to <span>play</span></h1>
+  <div class="acct" id="acct">
+    <div id="signedOut" hidden>
+      <h3>Sign in to translate</h3>
+      <p class="hint">Your e-mail is all it takes: a 3-day free trial, then &euro;7 for 6 months or &euro;15 for life. No password.</p>
+      <div id="stepEmail" class="keyrow"><input type="text" id="email" placeholder="you@example.com" autocomplete="email" spellcheck="false"><button class="solid" id="sendCode" type="button">Send code</button></div>
+      <div id="stepCode" hidden>
+        <div class="keyrow"><input type="text" id="code" placeholder="6-digit code" inputmode="numeric" maxlength="7" autocomplete="one-time-code"><button class="solid" id="verify" type="button">Sign in</button></div>
+        <p class="hint">We sent it to <b id="sentTo"></b> - or just click the link in that e-mail (on your phone too) and this window signs in by itself. <button class="link" id="otherEmail" type="button">Use another e-mail</button></p>
+      </div>
+    </div>
+    <div id="signedIn" hidden>
+      <div class="acctrow"><span><span class="dot" id="acctDot"></span><b id="acctLine"></b><br><span class="hint" id="acctMail"></span></span><span class="grow"></span><button class="solid" id="buy" type="button" hidden>Buy</button></div>
+      <p class="hint away" id="away" hidden>Your account is set to another PC. To use it here: More settings &gt; HWID reset.</p>
+      <div class="acctrow small"><span class="grow"></span><button class="link" id="logout" type="button">Sign out</button></div>
+    </div>
+    <p class="hint note" id="acctNow" role="status"></p>
+  </div>
+  <div id="settingsArea">
+  <p class="sub"><b>Restart Dota once</b> after installing - the game picks up its chat feed only when it starts - then play in Borderless Window or Windowed mode (not Exclusive Fullscreen). Translations appear above the game's chat.</p>
+
+  <div class="mode">
+    <label><input type="radio" name="display" value="above" checked><span><b>Above Dota's chat</b>Plain text, like the game's own</span></label>
+    <label><input type="radio" name="display" value="box"><span><b>In its own box</b>A dark panel in a corner</span></label>
+  </div>
+  <p class="hint note" id="displayNow" role="status"></p>
+
+  <div class="sayblock">
+    <h3>Your teammates write</h3>
+    <div class="mode say three">
+      <label><input type="radio" name="theirs" value="Russian" checked><span><b>Russian</b>EU servers</span></label>
+      <label><input type="radio" name="theirs" value="Spanish"><span><b>Spanish</b>US servers</span></label>
+      <label><input type="radio" name="theirs" value="Chinese"><span><b>Chinese</b>SEA servers</span></label>
+    </div>
+    <p class="hint">Their chat is shown in English either way; this decides which language is picked out of the chat and which one Ctrl+Enter writes. <span id="theirsNow" style="color: var(--good)"></span></p>
+  </div>
+
+  <div class="sayblock">
+    <h3>Your own messages: Ctrl+Enter in Dota's chat translates them</h3>
+    <div class="mode say">
+      <label><input type="radio" name="sayInto" value="theirs" checked><span><b>English &rarr; <i class="L">Russian</i></b>You type English, they read <i class="L">Russian</i></span></label>
+      <label><input type="radio" name="sayInto" value="english"><span><b><i class="L">Russian</i> &rarr; English</b>You type <i class="L">Russian</i>, they read English</span></label>
+    </div>
+    <p class="hint">Type in the game's chat as always, then press Ctrl+Enter instead of Enter. Plain Enter sends it exactly as you typed it. (It follows what they really type: if the chat turns out to be in another of these languages, Ctrl+Enter writes that one.) <span id="sayNow" style="color: var(--good)"></span></p>
+  </div>
+
+  <details class="more" id="more">
+    <summary>More settings</summary>
+    <div class="body">
+      <div>
+        <h3>Translate these languages</h3>
+        <div class="langs" id="langs"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="showOriginal"><span><b>Show what was said, in brackets</b>go mid (&#1080;&#1076;&#1080; &#1084;&#1080;&#1076;) - so a bad translation never hides the original</span></label>
+      <label class="check"><input type="checkbox" id="showHeroes"><span><b>Hero portraits before names</b>As Dota's chat has them. Read from your Dota install, or from Valve's image server if not found there</span></label>
+      <label class="check"><input type="checkbox" id="autoUpdate"><span><b>Update automatically</b>Checked at startup, installed when you next close the app</span></label>
+      <div>
+        <h3>Text size, in its own box</h3>
+        <p class="hint">Above Dota's chat the text copies the game's size; this is for the separate box.</p>
+        <div class="size"><input type="range" id="fontSize" min="11" max="28" step="1"><output id="fontSizeOut"></output></div>
+      </div>
+      <div>
+        <h3>The app's own keys</h3>
+        <p class="hint">A key used here is taken from Dota too - change it if you use it in the game (Alt+D is alt-cast for the D slot). Click, then press the keys.</p>
+        <div class="keys">
+          <span>Hide or show the translations</span><button class="cap" id="hideHotkey" type="button"></button><button class="link" type="button" data-none="hideHotkey">None</button>
+          <span>Quit the app</span><button class="cap" id="quitHotkey" type="button"></button><button class="link" type="button" data-none="quitHotkey">None</button>
+        </div>
+      </div>
+      <p class="files">There are more settings than these - timing, position, the model - in a file called <b>config.json</b>, for people who like that sort of thing. <button class="link" id="folder" type="button">Open its folder</button></p>
+      <div id="hwidBlock" hidden>
+        <h3>HWID reset</h3>
+        <p class="hint">Your account works on one PC at a time. Moved to a new PC? Reset it here, on the new one. Once a day.</p>
+        <div class="acctrow small"><button id="reset" type="button">Reset HWID to this PC</button><span class="hint" id="resetText"></span></div>
+      </div>
+      <p class="hint note" id="moreNow" role="status"></p>
+    </div>
+  </details>
+  </div>
+
+  <div id="result" role="status"></div>
+
+  <div class="actions">
+    <span class="grow"></span>
+    <button id="close" type="button">Close</button>
+  </div>
+  <p class="trust">Signed in, chat lines that need translating go to this project's translator (translate.dotatranslator.live) and on to Google's Gemini. Nothing that is said is logged there. Lines already in English never leave your PC.</p>
+  <p class="trust" id="acctFoot" hidden><span class="dot ok"></span><span id="acctFootText"></span> <button class="link" id="logout2" type="button">Sign out</button></p>
+  <p class="trust" id="version"><span class="dot" id="dot"></span><span id="updateText"></span> <button class="link" id="checkNow" type="button">Check now</button> <button class="link" id="installNow" type="button" hidden>Quit and install</button></p>
+
+  <script src="setup.js"></script>
+</body>
+</html>

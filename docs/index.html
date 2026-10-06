@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dota Translator - Russian, Spanish and Chinese Dota 2 chat, in English, live</title>
+<meta name="description" content="Live translation of Dota 2 chat: Russian, Spanish and Chinese, in English about two seconds after it is said, from Dota's own chat feed. Answer back in their language.">
+<meta property="og:title" content="They type Russian. You read English.">
+<meta property="og:image" content="https://dotatranslator.live/logo-512.webp">
+<meta property="og:description" content="Live translation of Dota 2 chat, right above the game's own. 3-day free trial.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/webp" href="logo-192.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+  /* One file, no build. Every number on this page is a measurement from
+     CLAUDE.md, and every translation shown is what the model really
+     answered; if one changes there, change it here. No screenshots of the
+     game are used: the scene in the slider is drawn in CSS. The hero
+     portraits are LINKED from Valve's own image server (the app itself reads
+     them from the player's install, and falls back to that server) - none
+     of them is in this repo, and none should be. */
+  :root {
+    --bg: #0a0d10;
+    --panel: #11161b;
+    --panel-2: #161c22;
+    --line: rgba(200, 215, 230, 0.10);
+    --line-strong: rgba(200, 215, 230, 0.22);
+    --text: #f4f6f8;
+    --dim: rgba(244, 246, 248, 0.68);
+    --faint: #8b95a3;
+    --accent: #f0b44c;
+    --accent-ink: #231703;
+    --good: #7bd88f;
+    --warn: #e58b6b;
+    --serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+    --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background:
+      radial-gradient(900px 480px at 78% -8%, rgba(240, 180, 76, 0.10), transparent 60%),
+      radial-gradient(700px 420px at 0% 12%, rgba(90, 150, 120, 0.10), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  h1, h2 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.01em; line-height: 1.04; text-wrap: balance; }
+  h1 { font-size: clamp(44px, 6.4vw, 78px); }
+  h2 { font-size: clamp(32px, 4vw, 48px); }
+  h1 span, h2 span { color: var(--accent); font-style: italic; }
+  h3 { font-size: 17px; font-weight: 600; }
+  .lead { color: var(--dim); max-width: 640px; margin: 14px auto 0; }
+  .center { text-align: center; }
+
+  /* nav */
+  nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(10px); background: rgba(10, 13, 16, 0.78); border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; align-items: center; gap: 20px; height: 62px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 21px; text-decoration: none; margin-right: auto; white-space: nowrap; }
+  .brand b { color: var(--accent); font-weight: 500; font-style: italic; }
+  nav a.link { color: var(--dim); text-decoration: none; font-size: 15px; white-space: nowrap; }
+  .lang-m { display: none; margin-bottom: 18px; color: var(--accent); font-size: 14.5px; font-weight: 600; text-decoration: none; }
+  nav a.lang { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; border: 1px solid var(--line-strong); border-radius: 6px; padding: 3px 7px; }
+  nav a.link:hover { color: var(--text); }
+  nav a.treasure-nav { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 7px 15px 7px 83px; border: 1px solid rgba(240, 180, 76, 0.48); border-radius: 9px; background: linear-gradient(135deg, rgba(240, 180, 76, 0.17), rgba(240, 180, 76, 0.05)); color: #ffd48a; font-size: 14px; font-weight: 700; text-decoration: none; white-space: nowrap; box-shadow: inset 0 1px rgba(255, 255, 255, 0.08), 0 0 18px rgba(240, 180, 76, 0.09); transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
+  nav a.treasure-nav:hover { transform: translateY(-1px); border-color: var(--accent); background: rgba(240, 180, 76, 0.2); box-shadow: 0 0 22px rgba(240, 180, 76, 0.19); }
+  nav a.treasure-nav:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .treasure-nav img { position: absolute; left: -9px; top: 50%; width: 96px; height: auto; pointer-events: none; transform: translateY(-50%) rotate(-2deg); transform-origin: 55% 65%; filter: drop-shadow(0 2px 4px #000) drop-shadow(0 0 9px rgba(255, 73, 35, 0.58)); animation: treasure-float 3.2s ease-in-out infinite; }
+  nav a.treasure-nav:hover img { left: 8px; width: 68px; filter: drop-shadow(0 1px 2px #000) drop-shadow(0 0 3px rgba(255, 83, 43, 0.7)); animation: treasure-wiggle 550ms ease-in-out 1; }
+  @keyframes treasure-float { 0%, 100% { transform: translateY(-50%) rotate(-2deg); } 50% { transform: translateY(calc(-50% - 2px)) rotate(2deg); } }
+  @keyframes treasure-wiggle { 0%, 100% { transform: translateY(-50%) rotate(-2deg); } 25% { transform: translateY(-50%) rotate(3deg); } 55% { transform: translateY(-50%) rotate(-3deg); } 80% { transform: translateY(-50%) rotate(2deg); } }
+  .btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 9px; border-radius: 10px; padding: 10px 16px; font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid var(--line-strong); transition: transform 120ms ease, background 120ms ease; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.solid { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .btn.solid:hover { background: #f6c163; }
+  .btn.big { padding: 15px 22px; font-size: 17px; border-radius: 12px; }
+  .btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+  /* hero */
+  .hero { padding: 72px 0 40px; }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 48px; align-items: center; }
+  .sub { color: var(--dim); font-size: 19px; margin-top: 22px; max-width: 520px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .needs { margin-top: 16px; color: var(--dim); font-size: 15px; max-width: 520px; }
+  .needs b { color: var(--text); font-weight: 600; }
+  .needs a { color: var(--accent); }
+  .proofline { margin-top: 22px; color: var(--faint); font-size: 14.5px; }
+  .proofline b { color: var(--text); font-weight: 600; white-space: nowrap; }
+
+  /* the slider: one scene, drawn twice, the top one clipped at the handle */
+  .compare { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line-strong); aspect-ratio: 16 / 10; user-select: none; touch-action: pan-y; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5); --at: 34%; }
+  .scene { position: absolute; inset: 0;
+    background:
+      radial-gradient(60% 50% at 70% 30%, rgba(122, 170, 90, 0.55), transparent 70%),
+      radial-gradient(45% 40% at 20% 75%, rgba(70, 120, 95, 0.6), transparent 70%),
+      linear-gradient(115deg, transparent 42%, rgba(120, 190, 215, 0.35) 47%, rgba(120, 190, 215, 0.35) 53%, transparent 58%),
+      linear-gradient(160deg, #24351f, #182a1d 55%, #12201a); }
+  .scene::after { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.55)); }
+  .scene.with { clip-path: inset(0 0 0 var(--at)); }
+  .tagline { position: absolute; top: 14px; z-index: 3; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 9px; border-radius: 7px; background: rgba(0, 0, 0, 0.55); color: var(--dim); }
+  .tagline.l { left: 14px; }
+  .tagline.r { right: 14px; color: var(--accent); }
+  .hud { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 46%; height: 13%; z-index: 2; background: linear-gradient(#20262d, #12161a); border: 1px solid rgba(255, 255, 255, 0.08); border-bottom: 0; border-radius: 8px 8px 0 0; }
+  .hud::before { content: ''; position: absolute; left: 6%; right: 6%; top: 52%; height: 16%; border-radius: 3px; background: linear-gradient(90deg, #3fae4f 0 72%, #173a1d 72%); box-shadow: 0 12px 0 #2f6fd0; }
+  .chat { position: absolute; left: 4%; right: 2%; bottom: 17%; z-index: 2; font-weight: 700; font-size: clamp(10.5px, 1.2vw, 14px); line-height: 1.55; text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000, 0 2px 3px rgba(0, 0, 0, 0.9); white-space: nowrap; }
+  .chat .row { display: flex; align-items: center; gap: 0.45em; }
+  /* A hero portrait, as the game's chat has. The coloured block behind it
+     is what shows if the picture does not load. */
+  .chat .face { width: 2.2em; aspect-ratio: 16 / 9; border-radius: 2px; flex: none; border: 1px solid rgba(0, 0, 0, 0.7); overflow: hidden; }
+  .chat .face img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .chat .gap { height: 0.9em; }
+  .chat .o { font-weight: 400; color: rgba(232, 230, 223, 0.78); font-size: 0.86em; }
+  .c0 { color: #3375FF; } .c2 { color: #d64fd6; } .c3 { color: #F3F00B; } .c4 { color: #FF6B00; }
+  .f0 { background: linear-gradient(135deg, #2b5fd0, #7fb2ff); } .f2 { background: linear-gradient(135deg, #7a1f7a, #e27be2); }
+  .f3 { background: linear-gradient(135deg, #8a8606, #f3f00b); } .f4 { background: linear-gradient(135deg, #a13f00, #ffa45e); }
+  .handle { position: absolute; top: 0; bottom: 0; left: var(--at); width: 2px; background: var(--accent); z-index: 4; transform: translateX(-1px); }
+  .handle::after { content: '\2194'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 19px; font-weight: 700; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5); }
+  .compare input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; z-index: 5; margin: 0; }
+  .compare:focus-within .handle::after { outline: 3px solid rgba(240, 180, 76, 0.45); }
+  .caption { margin-top: 12px; color: var(--faint); font-size: 14px; text-align: center; }
+  /* Which language the hero's chat is in: the app's own three choices, under
+     the app's own words for them ("Your teammates write"). Each is the same
+     scene with every line in it what the translator really answered; the
+     headline's language word follows. Without script it is Russian. */
+  h1 b { font-weight: inherit; }
+  .langs { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 14px; }
+  .langs-l { color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .seg { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--line-strong); border-radius: 11px; background: var(--panel); }
+  .seg button { font: inherit; font-size: 14.5px; font-weight: 600; color: var(--dim); background: none; border: 0; border-radius: 8px; padding: 7px 13px; cursor: pointer; display: inline-flex; align-items: baseline; justify-content: center; gap: 6px; }
+  .seg button small { font-size: 11px; letter-spacing: 0.06em; color: var(--faint); }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .seg button[aria-pressed="true"] small { color: rgba(35, 23, 3, 0.68); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .compare .chat[data-lang] { display: none; }
+  .compare[data-lang="ru"] .chat[data-lang="ru"], .compare[data-lang="es"] .chat[data-lang="es"], .compare[data-lang="zh"] .chat[data-lang="zh"] { display: block; }
+
+  /* sections */
+  section { padding: 84px 0; }
+  .band { background: linear-gradient(var(--panel), var(--bg)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .window { margin: 38px auto 0; max-width: 900px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--panel); overflow: hidden; text-align: left; }
+  .window-bar { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; color: var(--faint); }
+  .dots { display: flex; gap: 6px; } .dots i { width: 10px; height: 10px; border-radius: 50%; background: #2b333c; }
+  .window-bar .r { margin-left: auto; color: var(--accent); }
+  .numbers { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .numbers div { padding: 26px 22px; border-right: 1px solid var(--line); }
+  .numbers div:last-child { border-right: 0; }
+  .numbers em { font-style: normal; color: var(--faint); font-size: 13px; text-transform: uppercase; letter-spacing: 0.07em; }
+  .numbers b { display: block; font-family: var(--serif); font-weight: 500; font-size: 44px; line-height: 1.1; margin: 8px 0 4px; }
+  .numbers b.a { color: var(--accent); }
+  .numbers span { color: var(--dim); font-size: 14.5px; }
+  .window-foot { padding: 13px 22px; border-top: 1px solid var(--line); color: var(--dim); font-size: 14.5px; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; text-align: left; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .card p { color: var(--dim); font-size: 15.5px; margin-top: 8px; }
+  /* The two pictures under "And now you can answer": the hero's scene
+     again, smaller, with the game's chat field at the bottom - what you
+     type, the key, and the line as it is then said. Drawn, like the hero:
+     nothing of the game's is in them but the portraits, which are linked. */
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 38px; text-align: left; }
+  .shot { margin: 0; }
+  .shot .frame { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line-strong); aspect-ratio: 16 / 9; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+  .shot .chat { bottom: 31%; font-size: clamp(10.5px, 1.05vw, 13.5px); }
+  .shot .hud { height: 9%; width: 40%; }
+  .shot .row.mine { background: linear-gradient(90deg, rgba(240, 180, 76, 0.22), rgba(240, 180, 76, 0) 85%); border-radius: 3px; margin-left: -0.3em; padding-left: 0.3em; }
+  .f5 { background: linear-gradient(135deg, #a3457a, #fe86c2); } .f6 { background: linear-gradient(135deg, #2b7f95, #65d9f7); } .f7 { background: linear-gradient(135deg, #5d6a22, #a1b447); }
+  .c5 { color: #FE86C2; } .c6 { color: #65D9F7; } .c7 { color: #A1B447; }
+  .typing { position: absolute; left: 4%; right: 4%; bottom: 14%; z-index: 2; display: flex; align-items: center; gap: 0.5em; padding: 0.5em 0.7em; border-radius: 4px; background: rgba(6, 9, 12, 0.78); border: 1px solid rgba(255, 255, 255, 0.16); font-weight: 600; font-size: clamp(10.5px, 1.05vw, 13.5px); white-space: nowrap; }
+  .typing .to { color: #fbe6b9; }
+  .typing .typed { color: #fff; border-right: 2px solid var(--accent); padding-right: 2px; }
+  .typing .grow { flex: 1; }
+  .typing kbd { font-family: var(--mono); font-size: 0.82em; font-weight: 700; background: var(--accent); color: var(--accent-ink, #231703); border-radius: 5px; padding: 0.18em 0.55em; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.55); }
+  .typing kbd + kbd { margin-left: -0.15em; }
+  .shot figcaption { margin-top: 14px; color: var(--dim); font-size: 15px; }
+  .shot figcaption b { color: var(--text); }
+  .shot figcaption .ex { display: block; margin-top: 8px; font-family: var(--mono); font-size: 13px; color: var(--faint); }
+  .shot figcaption .ex b { color: var(--good, #7bd88f); }
+  .fine b { color: var(--dim); }
+  .lede { max-width: 720px; margin: 14px auto 0; color: var(--dim); font-size: 17px; }
+  .lede b { color: var(--text); }
+  .fine { max-width: 760px; margin: 22px auto 0; color: var(--faint); font-size: 13.5px; }
+  .fine a { color: var(--accent); }
+  .card .ex { margin-top: 12px; font-family: var(--mono); font-size: 13px; color: var(--faint); }
+  .card .ex b { color: var(--good); font-weight: 500; }
+
+  .steps { display: grid; grid-template-columns: repeat(2, minmax(0, 380px)); justify-content: center; gap: 16px; margin-top: 40px; text-align: left; counter-reset: s; }
+  .step { counter-increment: s; border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--panel-2); }
+  .step::before { content: counter(s); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 15px; margin-bottom: 14px; }
+  .step p { color: var(--dim); font-size: 15.5px; margin-top: 8px; }
+  .step a { color: var(--accent); white-space: nowrap; }
+  code { font-family: var(--mono); font-size: 0.88em; background: rgba(255, 255, 255, 0.07); padding: 2px 6px; border-radius: 5px; }
+
+  .catch { border: 1px solid rgba(229, 139, 107, 0.35); background: linear-gradient(rgba(229, 139, 107, 0.07), transparent); border-radius: 18px; padding: 40px; max-width: 900px; margin: 0 auto; }
+  .catch h2 span { color: var(--warn); }
+  .catch ul { list-style: none; margin-top: 22px; display: grid; gap: 12px; }
+  .catch li { padding-left: 26px; position: relative; color: var(--dim); }
+  .catch li::before { content: ''; position: absolute; left: 4px; top: 0.62em; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .catch li b { color: var(--text); font-weight: 600; }
+  .catch .bottom { margin-top: 24px; font-weight: 600; }
+
+  .faq { max-width: 780px; margin: 34px auto 0; text-align: left; }
+  details { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; list-style: none; padding: 18px 28px 18px 0; font-weight: 600; position: relative; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: '+'; position: absolute; right: 4px; top: 14px; font-size: 24px; font-weight: 400; color: var(--accent); }
+  details[open] summary::after { content: '\2013'; }
+  details p { color: var(--dim); padding: 0 0 20px; }
+  details a { color: var(--accent); }
+
+  .end { text-align: center; padding: 96px 0 72px; }
+  .end .cta { justify-content: center; }
+  footer { border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--faint); font-size: 13.5px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+
+  /* The text links go first when the bar runs out of room (MEASURED 2026-10-04:
+     at 1101px it overflowed by 18px with the RU link in). RU stays at every
+     width: the Russian-speaking visitors are mostly on phones. */
+  @media (max-width: 1180px) { nav a.link:not(.lang) { display: none; } }
+  @media (max-width: 900px) {
+    .hero { padding-top: 44px; }
+    .hero .wrap { grid-template-columns: 1fr; gap: 34px; }
+    .cards, .steps { grid-template-columns: 1fr; }
+    .numbers { grid-template-columns: 1fr 1fr; }
+    .numbers div:nth-child(2) { border-right: 0; }
+    .numbers div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+    nav .wrap { gap: 12px; }
+    nav .btn { padding: 8px 13px; }
+    h1 { font-size: clamp(38px, 11vw, 60px); }
+    .btn.big { width: 100%; justify-content: center; }
+    section { padding: 60px 0; }
+    .catch { padding: 28px 22px; }
+    .chat { font-size: clamp(9px, 2.5vw, 14px); left: 3%; }
+    .compare { aspect-ratio: 1 / 1; }
+    .tagline { font-size: 10px; padding: 4px 7px; top: 10px; }
+    .tagline .long, .chat .o { display: none; }
+    .shots { grid-template-columns: 1fr; }
+    .shot .chat, .typing { font-size: clamp(9px, 2.6vw, 13.5px); }
+    .handle::after { width: 34px; height: 34px; font-size: 16px; }
+    .langs-l { width: 100%; }
+    .seg { width: 100%; }
+    .seg button { flex: 1; padding: 7px 6px; font-size: 13.5px; gap: 5px; }
+  }
+  @media (max-width: 700px) {
+    nav .wrap { height: auto; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; }
+    nav .brand { order: 1; }
+    /* No room for RU beside the logo and Download on a phone (a third row
+       made the sticky bar 162px): it moves to the top of the hero instead. */
+    nav a.lang { display: none; }
+    .lang-m { display: inline-block; }
+    nav .download-nav { order: 2; }
+    nav a.treasure-nav { order: 3; flex-basis: 100%; justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } .treasure-nav img, nav a.treasure-nav:hover img { animation: none; transform: translateY(-50%); } }
+</style>
+<script src="analytics.js" defer></script>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="logo-64.webp" width="30" height="30" alt=""><span>Dota <b>Translator</b></span></a>
+    <a class="treasure-nav" href="treasures/"><img src="treasure-crimson-nav.webp" width="96" height="64" alt=""><span>Try the Treasure Simulator</span></a>
+    <a class="link" href="#how">How it works</a>
+    <a class="link" href="#inside">What it does</a>
+    <a class="link" href="#catch">The catch</a>
+    <a class="link" href="#faq">Questions</a>
+    <a class="link lang" href="ru/" hreflang="ru" title="По-русски" aria-label="По-русски">RU</a>
+    <a class="btn solid download-nav" href="download.html">Free trial</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <a class="lang-m" href="ru/" hreflang="ru" lang="ru">Русская версия &rarr;</a>
+      <h1>They type <b id="theirs">Russian</b>.<br>You read <span>English.</span></h1>
+      <p class="sub">Live translation of Dota 2 chat, right above the game's own. In English about two seconds after it is said. Dota itself sends the chat to the app, through the feed Valve built for overlays. <b>New:</b> <a href="#back">answer them in their language</a> without leaving the game's chat.</p>
+      <div class="cta">
+        <a class="btn solid big" href="download.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16l-5.7-5.7 1.4-1.4L11 12.2V3zM5 18h14v2H5v-2z"/></svg>
+          Download for Windows
+        </a>
+        <a class="btn big" href="#how">See how it works &darr;</a>
+      </div>
+      <p class="needs">Windows, 80 MB. 3-day free trial, then &euro;7 for 6 months or &euro;15 lifetime. Sign in with your e-mail, restart Dota once, play.</p>
+      <p class="proofline"><b>Russian, Spanish, Chinese</b> - both ways &middot; <b>~2s</b> to English &middot; <b>Dota's own feed</b></p>
+    </div>
+
+    <div>
+      <div class="langs" role="group" aria-label="The language your teammates write">
+        <span class="langs-l">Your teammates write</span>
+        <span class="seg">
+          <button type="button" data-lang="ru" aria-pressed="true">Russian <small>EU</small></button>
+          <button type="button" data-lang="es" aria-pressed="false">Spanish <small>US</small></button>
+          <button type="button" data-lang="zh" aria-pressed="false">Chinese <small>SEA</small></button>
+        </span>
+      </div>
+      <div class="compare" id="compare" data-lang="ru">
+        <!-- without: the game's chat as it is -->
+        <div class="scene">
+          <div class="hud"></div>
+          <div class="chat" data-lang="ru">
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4">Иван:</span><span>у него бкб, не лезь</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2">&nbsp;Луиза:</span><span>гг вп, вы молодцы</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3">Дима:</span><span>собираемся все, пушим мид</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0">Саня:</span><span>бб есть? идём хг</span></div>
+          </div>
+          <div class="chat" data-lang="es">
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4">Mateo:</span><span lang="es">tiene bkb, no te metas</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2">&nbsp;Lucía:</span><span lang="es">gg wp, jugaron muy bien</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3">Diego:</span><span lang="es">juntense todos, pusheamos mid</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0">Valen:</span><span lang="es">tenes bb? vamos high</span></div>
+          </div>
+          <div class="chat" data-lang="zh">
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4" lang="zh-Hans">阿杰:</span><span lang="zh-Hans">他有BKB，别进去</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2" lang="zh-Hans">&nbsp;小雨:</span><span lang="zh-Hans">gg，你们打得真好</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3" lang="zh-Hans">老王:</span><span lang="zh-Hans">大家集合，推中路</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0" lang="zh-Hans">明明:</span><span lang="zh-Hans">买活好了吗？上高</span></div>
+          </div>
+        </div>
+        <!-- with: the same, and the English above it -->
+        <div class="scene with">
+          <div class="hud"></div>
+          <div class="chat" data-lang="ru">
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4">Иван:</span><span>he has bkb, don't go in</span><span class="o">(у него бкб, не лезь)</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2">&nbsp;Луиза:</span><span>gg wp, well played</span><span class="o">(гг вп, вы молодцы)</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3">Дима:</span><span>group up everyone, push mid</span><span class="o">(собираемся все, пушим мид)</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0">Саня:</span><span>bb up? lets go high ground</span><span class="o">(бб есть? идём хг)</span></div>
+            <div class="gap"></div>
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4">Иван:</span><span>у него бкб, не лезь</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2">&nbsp;Луиза:</span><span>гг вп, вы молодцы</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3">Дима:</span><span>собираемся все, пушим мид</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0">Саня:</span><span>бб есть? идём хг</span></div>
+          </div>
+          <div class="chat" data-lang="es">
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4">Mateo:</span><span>he has bkb, dont go in</span><span class="o" lang="es">(tiene bkb, no te metas)</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2">&nbsp;Lucía:</span><span>gg wp, you played very well</span><span class="o" lang="es">(gg wp, jugaron muy bien)</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3">Diego:</span><span>group up, push mid</span><span class="o" lang="es">(juntense todos, pusheamos mid)</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0">Valen:</span><span>do you have bb? let's go high</span><span class="o" lang="es">(tenes bb? vamos high)</span></div>
+            <div class="gap"></div>
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4">Mateo:</span><span lang="es">tiene bkb, no te metas</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2">&nbsp;Lucía:</span><span lang="es">gg wp, jugaron muy bien</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3">Diego:</span><span lang="es">juntense todos, pusheamos mid</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0">Valen:</span><span lang="es">tenes bb? vamos high</span></div>
+          </div>
+          <div class="chat" data-lang="zh">
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4" lang="zh-Hans">阿杰:</span><span>he has bkb, dont go in</span><span class="o" lang="zh-Hans">(他有BKB，别进去)</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2" lang="zh-Hans">&nbsp;小雨:</span><span>gg, you guys played really well</span><span class="o" lang="zh-Hans">(gg，你们打得真好)</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3" lang="zh-Hans">老王:</span><span>everyone group up, push mid</span><span class="o" lang="zh-Hans">(大家集合，推中路)</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0" lang="zh-Hans">明明:</span><span>is bb ready? push highground</span><span class="o" lang="zh-Hans">(买活好了吗？上高)</span></div>
+            <div class="gap"></div>
+            <div class="row"><span class="face f4" data-player="4"></span><span>[Allies]</span><span class="c4" lang="zh-Hans">阿杰:</span><span lang="zh-Hans">他有BKB，别进去</span></div>
+            <div class="row"><span class="face f2" data-player="2"></span><span class="c2" lang="zh-Hans">&nbsp;小雨:</span><span lang="zh-Hans">gg，你们打得真好</span></div>
+            <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3" lang="zh-Hans">老王:</span><span lang="zh-Hans">大家集合，推中路</span></div>
+            <div class="row"><span class="face f0" data-player="0"></span><span>[Allies]</span><span class="c0" lang="zh-Hans">明明:</span><span lang="zh-Hans">买活好了吗？上高</span></div>
+          </div>
+        </div>
+        <span class="tagline l">Without</span>
+        <span class="tagline r">With<span class="long"> Dota Translator</span></span>
+        <div class="handle" aria-hidden="true"></div>
+        <input type="range" min="0" max="100" value="34" aria-label="Drag to compare the chat without and with the translator">
+      </div>
+      <script>
+        // The three languages: the scene, and the headline's word, follow the
+        // tab. The same players (and portraits) in each; only the words change.
+        // Run here, as soon as the tabs exist, so the page OPENS on the right
+        // one. That first choice is a guess from the visitor's time zone (the
+        // browser's own setting; nothing is sent anywhere - the user asked for
+        // it, 2026-09-23): the Americas play on US and South American servers,
+        // where teammates type Spanish; South-East Asia and Oceania on SEA,
+        // where it is Chinese; everybody else sees Russian. A click always wins.
+        {
+          const box = document.getElementById('compare');
+          const word = document.getElementById('theirs');
+          const tabs = [...document.querySelectorAll('.seg button')];
+          const pick = (tab) => {
+            box.dataset.lang = tab.dataset.lang;
+            word.textContent = tab.firstChild.textContent.trim();
+            for (const t of tabs) t.setAttribute('aria-pressed', String(t === tab));
+          };
+          for (const tab of tabs) tab.addEventListener('click', () => pick(tab));
+          const theirsFor = (zone) => /^(America|US|Canada|Brazil|Chile|Mexico)[/]/.test(zone) || zone === 'Pacific/Honolulu' ? 'es'
+            : /^Asia[/](Singapore|Kuala_Lumpur|Kuching|Manila|Jakarta|Pontianak|Makassar|Jayapura|Bangkok|Ho_Chi_Minh|Saigon|Phnom_Penh|Vientiane|Yangon|Rangoon|Brunei|Dili)$|^Australia[/]|^Pacific[/]Auckland$/.test(zone) ? 'zh' : 'ru';
+          let zone = '';
+          try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { /* an old browser: Russian */ }
+          const first = tabs.find((t) => t.dataset.lang === theirsFor(zone));
+          if (first && first !== tabs[0]) pick(first);
+        }
+      </script>
+      <p class="caption">Drag the handle. The app asks the same thing - which language your teammates write - the first time it starts.</p>
+    </div>
+  </div>
+</header>
+
+<section class="center" id="back">
+  <div class="wrap">
+    <h2>And now you can <span>answer</span></h2>
+    <p class="lede">Type in Dota's own chat, the way you always do, and press <b>Ctrl+Enter</b> instead of Enter - it goes to the chat you had open, team or all. The chat closes at once, so you keep playing, and about a second later it is said - in their language: Russian, Spanish or Chinese. Plain Enter still sends exactly what you typed.</p>
+    <div class="shots">
+      <figure class="shot">
+        <div class="frame">
+          <div class="scene">
+            <div class="hud"></div>
+            <div class="chat">
+              <div class="row"><span class="face f3" data-player="3"></span><span>[Allies]</span><span class="c3">Дима:</span><span>собираемся все, пушим мид</span></div>
+              <div class="row mine"><span class="face f5" data-player="5"></span><span>[Allies]</span><span class="c5">You:</span><span>идем рошана после этой драки</span></div>
+            </div>
+            <div class="typing"><span class="to">To (Allies):</span><span class="typed">go rosh after this fight</span><span class="grow"></span><kbd>Ctrl</kbd><kbd>Enter</kbd></div>
+          </div>
+          <span class="tagline l">English &rarr; Russian</span>
+        </div>
+        <figcaption><b>You type English, they read Russian.</b> Or Spanish, or Chinese: tell the app once which one your team writes, and from then on it follows what it sees in their chat.<span class="ex">buy wards please &rarr; <b>купите варды плз</b><br>hi guys, good luck &rarr; <b lang="es">hola gente, buena suerte</b><br>go rosh after this fight &rarr; <b lang="zh-Hans">打完这波去打肉山</b></span></figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="frame">
+          <div class="scene">
+            <div class="hud"></div>
+            <div class="chat">
+              <div class="row"><span class="face f6" data-player="6"></span><span>[Allies]</span><span class="c6">Mike:</span><span>does anyone have wards?</span></div>
+              <div class="row mine"><span class="face f7" data-player="7"></span><span>[Allies]</span><span class="c7">Ты:</span><span>rosh after fight</span></div>
+            </div>
+            <div class="typing"><span class="to">To (Allies):</span><span class="typed">го рошан после драки</span><span class="grow"></span><kbd>Ctrl</kbd><kbd>Enter</kbd></div>
+          </div>
+          <span class="tagline l">Russian &rarr; English</span>
+        </div>
+        <figcaption><b>Or the other way round.</b> One setting, same key: for the player who types Russian, Spanish or Chinese and wants the rest of the team to understand.<span class="ex">иду топ, помогите &rarr; <b>going top, help</b><br><span lang="es">compren wards porfa</span> &rarr; <b>buy wards pls</b><br><span lang="zh-Hans">买个眼吧</span> &rarr; <b>buy wards</b></span></figcaption>
+      </figure>
+    </div>
+    <p class="fine"><b>The same line every time:</b> what you have said once is remembered on your PC, so the same English always comes out the same, at once and at no cost - in a plain text file a friend who speaks the language can correct. How it works: the app presses a few keys for you - select, copy, close the chat, then open it, paste, Enter - only when you press Ctrl+Enter and only while Dota is the window in front. Nothing is written to the game. <a href="#catch">More in the catch.</a></p>
+  </div>
+</section>
+
+<section class="center">
+  <div class="wrap">
+    <h2>Fast enough for a <span>fight</span></h2>
+    <p class="lead">A translation that arrives after the fight is a translation you never read. These are measurements from live matches, not estimates.</p>
+    <div class="window">
+      <div class="window-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>dota-translator / measured</span><span class="r">live matches, team and all chat</span></div>
+      <div class="numbers">
+        <div><em>Dota's chat feed</em><b>1&times;/s</b><span>the game sends it once a second</span></div>
+        <div><em>Said to English</em><b class="a">~2s</b><span>up to 1s for Dota's feed, then 0.7-0.9s to translate</span></div>
+        <div><em>Built on</em><b>GSI</b><span>the feed Valve made for overlays and stream tools</span></div>
+        <div><em>Trial</em><b class="a">3 days</b><span>then &euro;7 / 6 months or &euro;15 lifetime</span></div>
+      </div>
+      <div class="window-foot">Measured over a whole matchmade game. A line somebody already said comes back instantly, with no call at all.</div>
+    </div>
+  </div>
+</section>
+
+<section class="band center" id="inside">
+  <div class="wrap">
+    <h2>Built for how people <span>actually</span> type</h2>
+    <div class="cards">
+      <div class="card"><h3>Slang stays slang</h3><p>It is told it is reading Dota chat. Shorthand comes out as shorthand, not as an essay.</p><p class="ex">го рошан &rarr; <b>let's rosh</b><br>мид сс, осторожно &rarr; <b>mid miss, careful</b></p></div>
+      <div class="card"><h3>Nothing softened</h3><p>An insult is translated as an insult. What was said is the thing you asked for.</p><p class="ex">ты вообще играть умеешь? &rarr; <b>do you even know how to play?</b></p></div>
+      <div class="card"><h3>Team and all chat</h3><p>Both channels, tagged as the game tags them, with each player's own colour on their name.</p></div>
+      <div class="card"><h3>Only what you can't read</h3><p>English lines and the chat wheel are left alone and cost nothing. You see <code>english (what was said)</code>, so a bad translation never hides the original.</p></div>
+      <div class="card"><h3>It looks like Dota</h3><p>Same typeface as the game's chat, lined up with it, gone when the game's own line goes. Alt-tab and it gets out of the way.</p></div>
+      <div class="card"><h3>Nothing to set up</h3><p>No key, no password, no settings you have to touch. Install it, sign in with your e-mail, restart Dota once so the game picks up its chat feed, and play.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="center" id="how">
+  <div class="wrap">
+    <h2>Two steps, <span>two minutes</span></h2>
+    <div class="steps">
+      <div class="step"><h3>Not exclusive fullscreen</h3><p>Settings, Video, Display Mode: <b>Borderless Window</b> or <b>Windowed</b>, either is fine. The translation is a window drawn over the game, and an exclusive-fullscreen game does not let other windows on top of it.</p></div>
+      <div class="step"><h3>Install it, restart Dota once</h3><p>Download and run the installer. Dota reads its chat-feed setting only when it starts, so restart it once. Then play: translations appear above the game's chat.</p></div>
+    </div>
+    <p class="lead" style="margin-top:26px">Windows only. The installer is not code-signed, so Windows asks "are you sure?" the first time: More info, then Run anyway - <a href="download.html">what that looks like, and why it is normal</a>. It lives in the tray, by the clock. <code>Alt+D</code> hides it, <code>Alt+Shift+D</code> quits - both can be changed in its settings.</p>
+  </div>
+</section>
+
+<section id="catch">
+  <div class="wrap">
+    <div class="catch">
+      <h2>The <span>catch</span>, up front</h2>
+      <ul>
+        <li><b>It does not read Dota's memory.</b> Chat comes from Game State Integration, the feed Valve built into the game for overlays and stream tools: the game sends it to your own PC. The app never opens the game's process, injects nothing and changes none of its files. To switch the feed on it writes one small config file into Dota's folder, and Dota has to be restarted once to notice it.</li>
+        <li><b>It looks at three small spots of your screen.</b> The feed says which seat spoke, not which hero. So when somebody new speaks, the app captures the portrait beside the newest chat line - about 56 by 40 pixels - and if that is unclear their tile in the top bar, compares it with the portraits in your own Dota install, and throws it away. When you press Ctrl+Enter it also looks at the start of the chat input - "To (Allies)" or "To (All)" - to send your line to the chat you had open. Only while Dota is in front; nothing is saved or sent anywhere. It can be switched off, and then other players are shown by colour only.</li>
+        <li><b>Other players have no names.</b> The feed does not carry them. You see their hero portrait and their colour - <i>Pink</i>, <i>Teal</i> - which is how most people tell who spoke anyway. Your own lines carry your name.</li>
+        <li><b>If you use Ctrl+Enter to answer, it presses keys for you.</b> Select, copy, close the chat, then open it, paste and Enter, sent through Windows the way a macro key sends them - once, when you ask, and never unless Dota is in front. Nothing is written to the game. It can be switched off, and then the app sends the game nothing at all.</li>
+        <li><b>Valve has not approved it.</b> It uses Valve's own feed and gives no advantage in the game, but nobody at Valve has reviewed this app, and that is true of every third-party tool you run beside Steam.</li>
+        <li><b>A Dota update could change the feed or move the chat</b> on screen. Then the app updates itself; until it does, the text may sit in the wrong place or portraits may be missing. The translations themselves do not depend on either.</li>
+      </ul>
+      <p class="bottom">Like any third-party program: use it at your own risk.</p>
+    </div>
+  </div>
+</section>
+
+<section class="center" id="faq" style="padding-top:20px">
+  <div class="wrap">
+    <h2>Questions</h2>
+    <div class="faq">
+      <details><summary>What does it cost?</summary><p>A 3-day free trial, then &euro;7 for 6 months or &euro;15 lifetime. You pay once, by card: nothing renews, there is no monthly plan. The trial starts when you first sign in - with your e-mail and a code, no password - and belongs to your PC, one per PC. Paid or not, there is a fair daily allowance per player that normal play never reaches.</p></details>
+      <details><summary>Will it slow my game down?</summary><p>It should not. The game sends its chat to the app once a second; the app does not search or read the game at all. When somebody new speaks it compares one thumbnail-sized picture, which takes about 30 milliseconds.</p></details>
+      <details><summary>Is the download safe? It is an unsigned .exe from a stranger.</summary><p>Fair. So it is set up to be checked rather than believed: every installer is built by GitHub's automated build, not on my PC, and sent to VirusTotal; installation needs no administrator rights; it talks only to Google, GitHub and Valve's image server; and the fingerprint of each release is published. <a href="download.html#safe">The download page lists all of it</a>, and explains the blue Windows warning, which means "unknown publisher", not "something was found".</p></details>
+      <details><summary>Can I get banned?</summary><p>Nobody can promise anything about somebody else's rules, so here is what it does instead: it gets the chat from the feed Valve built into the game for tools like overlays, never touches the game's process and injects nothing. See <a href="#catch">the catch</a> for the rest - three small screen captures, and key presses if you use Ctrl+Enter. Valve has not reviewed this app.</p></details>
+      <details><summary>Where does my chat go?</summary><p>Only the lines that need translating leave your PC. They go to this project's translator (translate.dotatranslator.live) and on to Google's Gemini, and the English comes back the same way. Nothing that is said is logged or stored there: what is kept is a short-lived cache of text and its translation, with nothing about who said it, and a count of how many players used it each day. English lines never leave your PC. Hero portraits are read from your own Dota install; if one cannot be found there it is fetched from Valve's own image server. The app also fetches one small settings file from this project's GitHub.</p></details>
+      <details><summary>Can I answer them in their language?</summary><p>Yes. Type English in Dota's chat and press Ctrl+Enter instead of Enter: the chat closes at once and the line is sent in your teammates' language about a second later - the one you picked under "Your teammates write" in the settings (Russian, Spanish or Chinese), or whichever of those they turn out to be typing. A setting turns it round (their language &rarr; English). The translation is a model's, tuned for Dota chat; if somebody who speaks the language tells you a line is off, <a href="https://forms.gle/4UwGB5drooGT4mUB9" rel="noopener">say so in the feedback form</a> - that is how it gets better. See <a href="#back">answering</a>.</p></details>
+      <details id="ctrl-enter-admin"><summary>Incoming translations work, but Ctrl+Enter does nothing. How do I fix it?</summary><p>If Dota is running as administrator, Windows can block Dota Translator from entering your translated message. Quit Dota Translator from its tray icon, then right-click its shortcut and choose <b>Run as administrator</b>. Open Dota's chat, type your message and try <b>Ctrl+Enter</b> again.</p><p>The translator needs the same permission level as the game. Administrator access is only needed when Dota is running as administrator, including when it was launched by an elevated Steam.</p></details>
+      <details><summary>Sometimes lines stay in Russian. Is it broken?</summary><p>Probably not. The translating is done by Google's Gemini, and when that is overloaded it answers slowly or not at all - usually for minutes. The app keeps showing every line as soon as it hears it, exactly as it was written, tells you once that the translator is not answering, and carries on by itself when it is back. Nothing to restart. The other cause is rarer: each player has a daily allowance of translations that normal play never reaches; if you hit it, the app says so and it comes back tomorrow.</p></details>
+      <details><summary>Which languages does it translate?</summary><p><b>Russian</b> is what it was built for, and what it does until told otherwise. <b>Spanish works the same way for US servers:</b> pick "Spanish" under "Your teammates write" in the settings and their Spanish is shown in English, and Ctrl+Enter sends yours in Latin American Spanish. <b>And Chinese for SEA servers:</b> pick "Chinese" there and your Chinese teammates' chat is shown in English, and Ctrl+Enter answers them in Chinese. Chinese pasted into chat anywhere else, voice lines above all, is translated out of the box. Greek, Korean, Arabic and Thai can be switched on in the settings; those are less tested.</p></details>
+      <details><summary>Does it update itself?</summary><p>Yes. It looks for a new version when it starts and every few hours after, downloads it quietly, and installs it the next time you close the app - never in the middle of a match. The version you are running is in the tray icon's menu.</p></details>
+      <details><summary>Can I check what it does?</summary><p>What you can check without taking my word: each installer's SHA-256 fingerprint and its VirusTotal report are on <a href="download.html#safe">the download page</a>, and what it does on your PC is listed in <a href="#catch">the catch</a>. Up to version 0.6 the source was public; from 0.7, with paid access, it is not.</p></details>
+      <details><summary>Can I ask for a change?</summary><p>Yes. The quickest way is the <a href="https://forms.gle/4UwGB5drooGT4mUB9" rel="noopener">feedback form</a>: one box, no account needed, and the app's tray menu opens it too. Report a bug or ask for a feature there - a wrong translation, a screen where the text sits in the wrong place, a language you want.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="end">
+  <div class="wrap">
+    <h2>Read your team.<br><span>Win the fight.</span></h2>
+    <div class="cta">
+      <a class="btn solid big" href="download.html">Download for Windows</a>
+    </div>
+    <p class="needs" style="margin: 16px auto 0; text-align: center">3-day free trial. Restart Dota once after installing.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Dota Translator is a fan project. Not affiliated with or endorsed by Valve. Dota 2 is a trademark of Valve Corporation.</span>
+    <span><a href="treasures/" style="color:inherit">Dota 2 Treasure Simulator</a> &middot; <a href="privacy.html" style="color:inherit">Privacy</a></span>
+  </div>
+</footer>
+
+<script>
+  // The slider. A range input does the work, so it is draggable, tappable
+  // and keyboard-operable without any of that being written here.
+  const box = document.getElementById('compare');
+  const range = box.querySelector('input');
+  const set = (v) => box.style.setProperty('--at', v + '%');
+  range.addEventListener('input', () => { moved = true; set(range.value); });
+  set(range.value);
+
+  // A hero for each of the four players, different on every visit, and
+  // the same one for a player on both sides of the handle.
+  const HEROES = ['juggernaut', 'pudge', 'lina', 'crystal_maiden', 'axe', 'invoker', 'sniper', 'furion', 'centaur', 'lion', 'mirana', 'earthshaker', 'phantom_assassin', 'zuus', 'windrunner', 'tiny'];
+  const picked = HEROES.map((h) => [Math.random(), h]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+  const byPlayer = {};
+  for (const face of document.querySelectorAll('.face[data-player]')) {
+    const p = face.dataset.player;
+    byPlayer[p] = byPlayer[p] || picked.pop();
+    const img = new Image();
+    img.alt = '';
+    img.onerror = () => img.remove();
+    img.src = 'https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/' + byPlayer[p] + '.png';
+    face.appendChild(img);
+  }
+
+  // Until somebody touches it, it keeps swaying to say that it moves (the
+  // user, 2026-09-22: it used to stop after a few seconds).
+  let moved = false;
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let t0 = 0;
+    const sway = (t) => {
+      if (!t0) t0 = t;
+      if (moved) return;
+      const s = (t - t0) / 1000;
+      const v = 34 + 30 * Math.sin(s * 0.9);
+      range.value = v; set(v);
+      requestAnimationFrame(sway);
+    };
+    setTimeout(() => requestAnimationFrame(sway), 900);
+  }
+</script>
+</body>
+</html>

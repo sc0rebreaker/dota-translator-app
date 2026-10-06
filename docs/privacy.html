@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy - Dota Translator</title>
+<meta name="description" content="What Dota Translator keeps about you, why, for how long, and how to have it deleted.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/webp" href="logo-192.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+  /* The privacy page (0.7.0, accounts and payments). Every claim on it is
+     what the server and the app actually do - check it against the server's
+     CLAUDE.md before changing either. Linked from the footers only. */
+  :root {
+    --bg: #0a0d10; --panel: #11161b;
+    --line: rgba(200, 215, 230, 0.10); --line-strong: rgba(200, 215, 230, 0.22);
+    --text: #f4f6f8; --dim: rgba(244, 246, 248, 0.72); --faint: #8b95a3;
+    --accent: #f0b44c;
+    --serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+    --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: radial-gradient(900px 480px at 78% -8%, rgba(240, 180, 76, 0.08), transparent 60%), var(--bg); color: var(--text); font-family: var(--sans); font-size: 16.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+  nav { border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; align-items: center; height: 62px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 21px; text-decoration: none; color: var(--text); }
+  .brand b { color: var(--accent); font-weight: 500; font-style: italic; }
+  main { padding: 48px 0 64px; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(34px, 5vw, 48px); line-height: 1.1; }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: 24px; margin: 36px 0 10px; }
+  p, li { color: var(--dim); }
+  p + p { margin-top: 10px; }
+  b { color: var(--text); font-weight: 600; }
+  .lead { margin-top: 14px; font-size: 18px; }
+  .updated { margin-top: 8px; color: var(--faint); font-size: 14px; }
+  ul { margin: 10px 0 0 20px; display: grid; gap: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--text); font-weight: 600; width: 34%; }
+  td { color: var(--dim); }
+  .box { margin-top: 14px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--panel); padding: 16px 18px; }
+  footer { border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--faint); font-size: 13.5px; }
+  footer a { color: inherit; }
+  @media (max-width: 600px) {
+    th, td { display: block; width: 100%; padding: 6px 0; border: 0; }
+    tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  }
+</style>
+<script src="analytics.js" defer></script>
+</head>
+<body>
+<nav><div class="wrap"><a class="brand" href="/"><img src="logo-64.webp" width="30" height="30" alt=""><span>Dota <b>Translator</b></span></a></div></nav>
+
+<main><div class="wrap">
+  <h1>Privacy</h1>
+  <p class="lead">What Dota Translator keeps about you, why, for how long, and how to have it deleted. Short, because little is kept.</p>
+  <p class="updated">Last updated: 7 October 2026</p>
+
+  <h2>Who is responsible</h2>
+  <p>Dota Translator is run by its developer, an individual in the European Union. For anything on this page - a question, a copy of your data, deleting your account - write to <a href="mailto:support@dotatranslator.live">support@dotatranslator.live</a>.</p>
+
+  <h2>Your account</h2>
+  <p>To use the translator you sign in with your e-mail address. There is no password: we send a one-time code and a sign-in link. On our server we keep:</p>
+  <table>
+    <tr><th>Your e-mail address</th><td>To send your sign-in codes and to know which account is yours. Never sold, never shared, never used for newsletters.</td></tr>
+    <tr><th>Your PC's ID</th><td>A one-way fingerprint (a hash) of your Windows machine ID - not the ID itself. It ties the free trial to one PC and an account to one PC at a time, so a trial cannot be had again with a new e-mail.</td></tr>
+    <tr><th>Your access</th><td>When your trial started and ends, whether you have paid and until when, and when you last moved your account to another PC.</td></tr>
+    <tr><th>Sign-in codes and sessions</th><td>Stored only as one-way fingerprints, never as the code or token itself. Codes expire after 15 minutes; a session after 90 days without use.</td></tr>
+  </table>
+
+  <h2>Payments</h2>
+  <p>We never see your card. A card payment is made on <b>Swapped.com</b>'s own form, which sells USDC (a dollar-pegged coin) and sends it to our wallet on the Polygon network; Swapped handles your card and any identity check under its own privacy policy. If you send USDC yourself, it comes straight from your wallet.</p>
+  <p>For each order we keep the product, the price, the amount expected, its status, and the transaction it was paid by. A transaction on a public blockchain shows which wallet sent it - that is how blockchains work, and anybody can look it up.</p>
+
+  <h2>Your chat</h2>
+  <ul>
+    <li><b>Only the lines that need translating leave your PC.</b> Lines already in English never do.</li>
+    <li>They go to our translator (translate.dotatranslator.live) and on to <b>Google's Gemini</b>, which does the translating under Google's terms for its paid API. The English comes back the same way.</li>
+    <li><b>Nothing that is said is written to disk on our server.</b> Recent lines and their translations are held only while the server runs, so a repeated line ("gg", "go mid") is answered at once; they are gone whenever the server restarts.</li>
+    <li>What you send with Ctrl+Enter is kept on <b>your own PC</b> (a file called said.json), so the same words are said the same way next time. You can read or delete it.</li>
+  </ul>
+
+  <h2>What the app does on your PC</h2>
+  <p>It reads the chat from the feed Valve built into the game (Game State Integration), compares two small spots of the screen with hero portraits to show who spoke, and presses keys when you press Ctrl+Enter. None of that is saved or sent anywhere. The app has no analytics and no tracking.</p>
+
+  <h2>Other things the server sees</h2>
+  <ul>
+    <li><b>Your IP address</b> is used while you are connected, to stop abuse (a limit on requests per address per day). It is not stored in our database and we keep no access logs of the translator.</li>
+    <li><b>Usage counts</b>: how many lines were translated per day and per account, so the daily allowance works and we know what it costs. Counts, not content.</li>
+    <li>Your Steam ID never leaves your PC; the app sends a one-way fingerprint of it at most.</li>
+  </ul>
+
+  <h2>E-mail</h2>
+  <p>Sign-in e-mails are sent through <b>Resend</b>, an e-mail delivery service, which therefore handles your address and the e-mail itself. Mail you send to support@dotatranslator.live is received there as well.</p>
+
+  <h2>This website</h2>
+  <p>The website (not the app) uses <b>Google Analytics</b> to count visits and clicks - which pages are read, which buttons pressed, roughly which country a visit is from. It sets cookies for that. The site itself is hosted on GitHub Pages and served through Cloudflare, which see your visit as any web host does.</p>
+
+  <h2>How long it is kept</h2>
+  <ul>
+    <li>Your account: until you ask us to delete it.</li>
+    <li>Sign-in codes: 15 minutes. Sessions: 90 days from last use.</li>
+    <li>Orders and payments: as long as accounting law requires us to keep records of sales, even after an account is deleted - without anything you did not need to give us.</li>
+  </ul>
+
+  <h2>Your rights</h2>
+  <p>You can ask for a copy of what we keep about you, have it corrected, or have your account deleted - write to <a href="mailto:support@dotatranslator.live">support@dotatranslator.live</a> from the address you signed in with. Deleting your account ends your access, and paid time is not refunded by deleting it. You can also complain to your country's data protection authority.</p>
+  <div class="box">We do not sell your data, do not show ads, and do not use what you say in chat for anything but translating it at that moment.</div>
+</div></main>
+
+<footer><div class="wrap">Dota Translator is a fan project. Not affiliated with or endorsed by Valve. Dota 2 is a trademark of Valve Corporation. <a href="/">Home</a></div></footer>
+</body>
+</html>
