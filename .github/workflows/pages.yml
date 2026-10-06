@@ -26,6 +26,11 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          # Without this the checkout's own GITHUB_TOKEN stays in git's config
+          # as an auth header for github.com and wins over RELEASES_TOKEN in
+          # the URL below: the push to the other repository is refused
+          # (0.7.0's run failed so).
+          persist-credentials: false
       - name: docs/ becomes gh-pages of the releases repository
         env:
           TOKEN: ${{ secrets.RELEASES_TOKEN }}
