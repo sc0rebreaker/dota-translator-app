@@ -105,7 +105,9 @@
      75%, which is a blink when the model answers in a second and looked
      broken when it took five (the user: "the faded messages look weird"). */
   body.bare .pending .say { color: inherit; }
-  .status { color: var(--warn); font-size: 13px; padding: 1px 0; transition: opacity 500ms linear; }
+  /* The size of the chat lines, not 13px (the user, 2026-10-07: "very tiny"),
+     bold with the game's shadow so it reads over the map. */
+  .status { color: var(--warn); font-size: 1em; font-weight: 600; text-shadow: 1px 1.5px 0 #000; padding: 2px 0; transition: opacity 500ms linear; }
   .status.out { opacity: 0; }
   .note .say { color: var(--dim); font-style: italic; }
   body.bare .note .say { color: inherit; }
