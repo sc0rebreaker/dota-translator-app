@@ -263,7 +263,7 @@ Worth knowing if you are reviewing the code:
 - **Restart Dota once** after the app's first start. The game reads the
   feed's config only at launch.
 - If the overlay says it could not find Dota, the config file was not
-  written: [open an issue](https://forms.gle/4UwGB5drooGT4mUB9)
+  written: [open an issue](mailto:support@dotatranslator.live)
   with where your Steam library is.
 - **Steam running as administrator** stops the `Ctrl+Enter` key (Windows
   does not deliver a normal program's keys to an elevated one). Start Steam
@@ -282,13 +282,10 @@ reader is fed payloads recorded from real games.
 
 ## Feedback
 
-Tell me what worked and what did not: the [feedback form](https://forms.gle/4UwGB5drooGT4mUB9)
-is one box, needs no account, and is also in the app's tray menu. A wrong
-or odd translation is the most useful thing to report - include the
-original line and what the app showed. If you prefer GitHub,
-[issues](https://forms.gle/4UwGB5drooGT4mUB9)
-have forms for a bad translation, a bug and an idea, and pull requests are
-welcome.
+Tell me what worked and what did not: write to
+[support@dotatranslator.live](mailto:support@dotatranslator.live) - the app's
+tray menu opens it too. A wrong or odd translation is the most useful thing
+to report: include the original line and what the app showed.
 
 ## Licence
 

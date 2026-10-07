@@ -597,7 +597,7 @@ const pretty = (accel) => String(accel || '').replace('Control', 'Ctrl');
 // Windows for this user (safeStorage = DPAPI) rather than in plain text.
 // A form anybody can fill in with no account (the user's, made 2026-09-21);
 // it points at GitHub's issues and pull requests for those who prefer them.
-const FEEDBACK_URL = 'https://forms.gle/4UwGB5drooGT4mUB9';
+const FEEDBACK_URL = 'mailto:support@dotatranslator.live';
 let setupWin = null;
 let tray = null;
 // The balloon's picture is OUR icon, said outright: left to Windows it showed
@@ -701,7 +701,7 @@ function trayMenu() {
     ...(cfg.sayHotkey && cfg.sayAllHotkey ? [{ label: cfg.sayAllHotkey.replace('Control', 'Ctrl') + ' sends it to all chat', enabled: false }] : []),
     // The way a player says anything back: one big box and an optional
     // e-mail, no account needed. cfg.feedbackUrl (https only) overrides it.
-    { label: 'Send feedback, or report a bad translation...', click: () => shell.openExternal(String(cfg.feedbackUrl || '').startsWith('https://') ? cfg.feedbackUrl : FEEDBACK_URL) },
+    { label: 'Send feedback, or report a bad translation...', click: () => shell.openExternal(/^(https|mailto):/.test(String(cfg.feedbackUrl || '')) ? cfg.feedbackUrl : FEEDBACK_URL) },
     { label: 'Version ' + app.getVersion(), enabled: false },
     { type: 'separator' },
     { label: 'Quit' + (cfg.quitHotkey ? ' (' + pretty(cfg.quitHotkey) + ')' : ''), click: quitApp },
