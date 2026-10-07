@@ -75,7 +75,9 @@ export function describeAccount(st, now = Date.now()) {
   if (st.state === 'lifetime') return { text: 'Lifetime access', buy: false };
   if (st.state === 'paid') return { text: 'Paid until ' + dateText(st.paidUntil), buy: st.paidUntil - now < 14 * DAY };
   if (st.state === 'trial') {
-    const d = Math.max(1, Math.ceil((st.trialEnds - now) / DAY));
+    // An hour of slack: a fresh trial is exactly 3 days, and a PC clock a
+    // second behind the server's made it read "4 days left" (seen 2026-10-07).
+    const d = Math.max(1, Math.ceil((st.trialEnds - now - 3600000) / DAY));
     return { text: 'Free trial: ' + d + (d === 1 ? ' day' : ' days') + ' left', buy: true };
   }
   return { text: 'Trial over - buy to keep translating', buy: true };
