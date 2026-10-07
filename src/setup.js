@@ -1,5 +1,5 @@
-// The settings window's page. Since v0.5.0 there is no key in it: the
-// translating runs through the project's own server.
+// The settings window's page. Since 0.8.0 the app runs on the player's own
+// Gemini key again: with none, the window asks for it and nothing else.
 
 const $ = (id) => document.getElementById(id);
 const result = $('result');
@@ -168,68 +168,34 @@ LANGS.addEventListener('change', (e) => {
   saveNow('moreNow');
 });
 
-// ---- The account (0.7.0) -------------------------------------------------
-// Signed out: an e-mail, then the 6-digit code - or the link in the e-mail,
-// which the app notices by itself (it asks the server every few seconds).
-// Signed in: the state (trial / paid until / lifetime / over), Buy, moving
-// the account to this PC (once a day), sign out.
-const until = (ms) => { const h = Math.ceil((ms - Date.now()) / 3600000); return h <= 0 ? 'now' : h < 24 ? 'in ' + h + (h === 1 ? ' hour' : ' hours') : 'on ' + new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
-function showAccount(a) {
-  if (!a || !a.hosted) { $('acct').hidden = true; window.setup.fit(); return; }
-  $('acct').hidden = false;
-  $('signedOut').hidden = a.signedIn;
-  $('signedIn').hidden = !a.signedIn;
-  // Signed out, the window is the sign-in and nothing else (the settings wait).
-  $('headline').innerHTML = a.signedIn ? 'Ready to <span>play</span>' : 'Sign in to <span>start</span>';
-  $('settingsArea').hidden = !a.signedIn;
-  $('hwidBlock').hidden = !a.signedIn;
-  if (a.signedIn) {
-    const st = a.status || {};
-    $('acctLine').textContent = a.line.text;
-    $('acctMail').textContent = st.email ? 'Signed in as ' + st.email : '';
-    $('acctDot').className = 'dot ' + (st.state === 'expired' ? 'bad' : st.state ? 'ok' : 'wait');
-    $('buy').hidden = !a.line.buy;
-    const next = st.hwidResetAllowedAt || 0;
-    $('reset').disabled = next > Date.now();
-    $('away').hidden = st.hwidMatch !== false;
-    $('resetText').textContent = next > Date.now() ? 'Possible again ' + until(next) + '.' : '';
-  }
-  // Nothing to do (lifetime, or paid with more than 14 days left, on this PC):
-  // the account is one quiet line at the foot, and the settings lead the window.
-  const st = (a.signedIn && a.status) || {};
-  const calm = a.signedIn && st.hwidMatch !== false && !a.line.buy && (st.state === 'lifetime' || st.state === 'paid');
-  $('acct').hidden = calm;
-  $('acctFoot').hidden = !calm;
-  if (calm) $('acctFootText').textContent = a.line.text + (st.email ? ' · ' + st.email + ' ·' : '');
+// ---- The key (0.8.0) -----------------------------------------------------
+// No key: the window is the key field and nothing else (the settings wait).
+// A key: the settings, and one quiet line at the foot that lets it be changed.
+// The key itself never comes back to this page - only whether there is one.
+let changing = false;
+function showKeyState(hasKey) {
+  const ask = !hasKey || changing;
+  $('acct').hidden = !ask;
+  $('noKey').hidden = !ask;
+  $('headline').innerHTML = hasKey ? 'Ready to <span>play</span>' : 'Add your <span>key</span>';
+  $('settingsArea').hidden = !hasKey;
+  $('keyFoot').hidden = !hasKey || changing;
   window.setup.fit();
 }
-let emailNow = '';
-async function sendCode() {
-  emailNow = $('email').value.trim();
-  $('sendCode').disabled = true;
-  const r = await window.setup.signStart(emailNow);
-  $('sendCode').disabled = false;
-  if (!r.ok) { flash('acctNow', r.why, true); return; }
-  $('sentTo').textContent = emailNow;
-  $('stepEmail').hidden = true; $('stepCode').hidden = false; $('code').focus();
-  window.setup.fit();
+async function checkKey() {
+  const typed = $('key').value;
+  $('checkKey').disabled = true;
+  say('busy', 'Trying it with one real translation...');
+  const r = await window.setup.saveKey(typed);
+  $('checkKey').disabled = false;
+  if (!r || !r.ok) { say('bad', esc((r && r.why) || 'Not saved.')); return; }
+  $('key').value = '';
+  changing = false;
+  say('ok', 'It works: <code>' + esc(r.sample) + '</code> &rarr; <code>' + esc(r.en) + '</code>. Saved. The app sits by the clock (behind the ^ arrow) while you play.');
+  showKeyState(true);
 }
-async function verify() {
-  $('verify').disabled = true;
-  const r = await window.setup.signVerify(emailNow, $('code').value);
-  $('verify').disabled = false;
-  if (!r.ok) { flash('acctNow', r.why, true); return; }
-  showAccount(r); flash('acctNow', 'Signed in.');
-}
-$('sendCode').addEventListener('click', sendCode);
-$('email').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendCode(); });
-$('verify').addEventListener('click', verify);
-$('code').addEventListener('keydown', (e) => { if (e.key === 'Enter') verify(); });
-$('otherEmail').addEventListener('click', () => { window.setup.signCancel(); $('stepCode').hidden = true; $('stepEmail').hidden = false; window.setup.fit(); });
-$('buy').addEventListener('click', async () => { const r = await window.setup.buy(); if (!r.ok) flash('acctNow', r.why, true); else flash('acctNow', 'Opened in your browser. This updates by itself once the payment confirms.'); });
-$('reset').addEventListener('click', async () => { const r = await window.setup.resetHwid(); if (!r.ok) flash('acctNow', r.why, true); else { showAccount(r); flash('moreNow', 'Done: your account now works on this PC.'); } });
-const logout = async () => { showAccount(await window.setup.logout()); $('stepCode').hidden = true; $('stepEmail').hidden = false; };
-$('logout').addEventListener('click', logout);
-$('logout2').addEventListener('click', logout);
-window.setup.onAccount(showAccount);
-window.setup.account().then(showAccount);
+$('checkKey').addEventListener('click', checkKey);
+$('key').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkKey(); });
+$('guide').addEventListener('click', () => window.setup.guide());
+$('changeKey').addEventListener('click', () => { changing = true; showKeyState(true); $('key').focus(); });
+window.setup.state().then((s) => showKeyState(Boolean(s.hasKey)));

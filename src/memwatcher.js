@@ -11,24 +11,30 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { startMemorySource } from './memsource.js';
 import { createPipeline } from './pipeline.js';
-import { DATA_DIR, NOT_SIGNED_IN } from './config.js';
+import { translateBatch } from './translate.js';
+import { DATA_DIR, NO_KEY } from './config.js';
 import { offsetsArg } from './offsets.js';
 
-// Why a line came up untranslated, for the player. Anything not recognised
-// here (the hosted translator's refusals) is already in the player's words.
+// Why a line came up untranslated, for the player. Google's own wording is
+// kept for anything not recognised here: a bad key and a spent quota
+// already say what to do.
 export function explainModelError(message) {
   const m = String(message == null ? '' : message);
   if (/took too long|never answered|could not reach|high demand|overloaded|unavailable|http 5\d\d/i.test(m)) {
-    return 'The translator is not answering right now (busy or down). Lines are shown as they were said until it is back - nothing to do.';
+    return 'Google\'s translator is not answering right now (busy or down). Lines are shown as they were said until it is back - nothing to do.';
   }
-  // The hosted translator's refusals are already in the player's words.
+  if (/no Gemini API key/i.test(m)) return NO_KEY;
   return m;
 }
 
 export function startWatchingMemory(cfg, { onResult, onPending = () => {}, onStatus = () => {}, onLayout = () => {}, onSeen = () => {}, onFocus = () => {}, onGamePath = () => {}, translate, startSource = startMemorySource } = {}) {
-  // Translation goes through the signed-in hosted translator, handed in by
-  // main.js. Without it there is nothing that can translate.
-  const doTranslate = translate || (() => Promise.reject(new Error(NOT_SIGNED_IN)));
+  // hedge: whether a slow call may be raced by a second one. The pipeline
+  // says no once the minute's calls are half spent.
+  const doTranslate = translate || ((batch, { hedge = true } = {}) => (!cfg.geminiApiKey ? Promise.reject(new Error(NO_KEY)) : translateBatch(batch, {
+    apiKey: cfg.geminiApiKey,
+    model: cfg.model,
+    attempts: hedge ? undefined : 1,
+  })));
 
   // What has been translated already. Chat repeats itself - "gg", the
   // same insult, the chat wheel in Russian - and a repeat answered from
@@ -47,16 +53,15 @@ export function startWatchingMemory(cfg, { onResult, onPending = () => {}, onSta
     batchMs: cfg.batchMs,
     callsPerMinute: cfg.callsPerMinute,
     onResult: (row) => { remember(row); onResult(row); },
-    // Said in words, and at most once a minute: when the translator is down EVERY
+    // Said in words, and at most once a minute: when Google is down EVERY
     // line fails, and a line of error under each of them is a second wall
     // of text over the game. SEEN 2026-09-21: an hour of "high demand" and
     // hung calls on every Flash model, the key and the app both fine.
     onError: (err) => {
       const text = explainModelError(String((err && err.message) || err));
       const now = Date.now();
-      // An account refusal (signed out, trial over, another PC) is said ONCE in
-      // half an hour, not under every line: it is not going away mid-match.
-      const quiet = /sign in|trial is over|another PC/i.test(text) ? 30 * 60000 : 60000;
+      // No key is said ONCE in half an hour, not under every line.
+      const quiet = text === NO_KEY ? 30 * 60000 : 60000;
       if (text === lastModelError.text && now - lastModelError.at < quiet) return;
       lastModelError = { text, at: now };
       onStatus({ kind: 'error', text });

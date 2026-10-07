@@ -6,6 +6,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 import { parseChatLine, chatToTranslate, needsTranslation, libraryPaths, logCandidates, LogTail, findDotaLog } from './src/chatlog.js';
+import { buildRequest, replyTextFrom, translationsFrom, translateBatch, askGeminiHedged, HEDGE_AFTER_MS, ATTEMPT_MS } from './src/translate.js';
 import { createPipeline } from './src/pipeline.js';
 import { parseMemoryChatLine, parseMarkupChatLine, createLineTracker, readMemoryFindings, unknownChannelTag, PERSONA, MAX_LINE, MAX_NAME } from './src/chatmem.js';
 import { parseEvent, scannerArgs, nearestDistance, POWERSHELL, startMemorySource, explainReaderError } from './src/memsource.js';
@@ -153,6 +154,74 @@ ok('a log that is not there yet is waited for, not thrown on', () => {
   assert.deepEqual(seen, ['Petr: da']);
 });
 
+console.log('translate');
+
+ok('the request carries the lines and asks for JSON back', () => {
+  const req = buildRequest([{ name: 'Ivan', text: 'го рошан' }]);
+  assert.equal(req.generationConfig.responseMimeType, 'application/json');
+  assert.deepEqual(JSON.parse(req.contents[0].parts[0].text), [{ i: 0, name: 'Ivan', text: 'го рошан' }]);
+});
+
+ok('a long message is capped before it is sent', () => {
+  const sent = JSON.parse(buildRequest([{ name: 'x'.repeat(50), text: 'я'.repeat(600) }]).contents[0].parts[0].text);
+  assert.equal(sent[0].name.length, 32);
+  assert.equal(sent[0].text.length, 400);
+});
+
+ok('the reply text is joined out of the parts', () => {
+  assert.equal(replyTextFrom({ candidates: [{ content: { parts: [{ text: 'a' }, { text: 'b' }] } }] }), 'ab');
+  assert.equal(replyTextFrom({}), '');
+  assert.equal(replyTextFrom(null), '');
+});
+
+ok('translations are read by index', () => {
+  const map = translationsFrom('[{"i":0,"en":"go roshan"},{"i":1,"en":"mid missing"}]');
+  assert.equal(map.get(0), 'go roshan');
+  assert.equal(map.get(1), 'mid missing');
+});
+
+ok('a reply wrapped in prose is still read', () => {
+  assert.equal(translationsFrom('Here you go:\n[{"i":0,"en":"go roshan"}]\nhope that helps').get(0), 'go roshan');
+});
+
+ok('a reply that is not JSON at all costs nothing', () => {
+  assert.equal(translationsFrom('sorry, I cannot').size, 0);
+  assert.equal(translationsFrom('').size, 0);
+});
+
+ok('a row without a usable index or text is skipped', () => {
+  const map = translationsFrom('[{"i":"x","en":"a"},{"i":1},{"i":2,"en":"  "},{"i":3,"en":"ok"}]');
+  assert.deepEqual([...map.entries()], [[3, 'ok']]);
+});
+
+await okAsync('a line the model dropped falls back to what was said', async () => {
+  const fetchImpl = async () => ({
+    ok: true,
+    json: async () => ({ candidates: [{ content: { parts: [{ text: '[{"i":0,"en":"go roshan"}]' }] } }] }),
+  });
+  const out = await translateBatch(
+    [{ name: 'Ivan', text: 'го рошан' }, { name: 'Petr', text: 'мид сс' }],
+    { apiKey: 'k', fetchImpl },
+  );
+  assert.deepEqual(out[0], { name: 'Ivan', text: 'го рошан', en: 'go roshan', translated: true });
+  assert.deepEqual(out[1], { name: 'Petr', text: 'мид сс', en: 'мид сс', translated: false });
+});
+
+await okAsync('an http error is reported in the server own words', async () => {
+  const fetchImpl = async () => ({ ok: false, status: 429, json: async () => ({ error: { message: 'quota exceeded' } }) });
+  await assert.rejects(
+    () => translateBatch([{ name: 'a', text: 'б' }], { apiKey: 'k', fetchImpl }),
+    /quota exceeded/,
+  );
+});
+
+await okAsync('no key is refused before any call is made', async () => {
+  let called = false;
+  const fetchImpl = async () => { called = true; };
+  await assert.rejects(() => translateBatch([{ name: 'a', text: 'б' }], { apiKey: '', fetchImpl }), /API key/);
+  assert.equal(called, false);
+});
+
 console.log('pipeline');
 
 await okAsync('lines arriving together go out as one call', async () => {
@@ -225,6 +294,13 @@ ok('a missing or malformed field falls back to the default', () => {
 ok('scripts must be a list to be taken', () => {
   assert.deepEqual(mergeConfig({ scripts: ['cyrillic', 'han'] }).scripts, ['cyrillic', 'han']);
   assert.deepEqual(mergeConfig({ scripts: 'cyrillic' }).scripts, DEFAULTS.scripts);
+});
+
+ok('the env key wins over the file', () => {
+  const before = process.env.GEMINI_API_KEY;
+  process.env.GEMINI_API_KEY = 'from-env';
+  assert.equal(mergeConfig({ geminiApiKey: 'from-file' }).geminiApiKey, 'from-env');
+  if (before === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = before;
 });
 
 console.log('chatmem');
@@ -679,10 +755,64 @@ ok('a placement carries the region and allocation the line was in', () => {
   source.stop();
 });
 
+await okAsync('the first try is given seconds, not twelve, and the second is given longer', async () => {
+  // MEASURED: a call answers in about a second or never. Waiting 12s to
+  // learn which put a line up 14 seconds after it was said.
+  const given = [];
+  const hangsOnce = async (url, init) => {
+    given.push(init.signal);
+    if (given.length === 1) { const e = new Error('x'); e.name = 'AbortError'; throw e; }
+    return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '[{"i":0,"en":"gg"}]' }] } }] }) };
+  };
+  assert.ok(HEDGE_AFTER_MS <= 1500 && ATTEMPT_MS > HEDGE_AFTER_MS);
+  const rows = await translateBatch([{ name: 'A', text: 'гг' }], { apiKey: 'k', fetchImpl: hangsOnce });
+  assert.equal(given.length, 2);
+  assert.equal(rows[0].en, 'gg');
+});
+
 ok('windows have defaults, and a config can turn them off', () => {
   assert.equal(mergeConfig({}).scanWindowMb, 4);
   assert.equal(mergeConfig({}).scanWideEvery, 5);
   assert.equal(mergeConfig({ scanWindowMb: 0 }).scanWindowMb, 0);
+});
+
+await okAsync('a call that never arrived is made once more, an answered one is not', async () => {
+  // The first live game this ever read timed out on one of its two
+  // lines, so this is the common case, not the rare one.
+  let tries = 0;
+  const flaky = async () => {
+    tries++;
+    if (tries === 1) { const e = new Error('boom'); e.name = 'AbortError'; throw e; }
+    return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '[{"i":0,"en":"go mid"}]' }] } }] }) };
+  };
+  const rows = await translateBatch([{ name: 'A', text: 'иди мид' }], { apiKey: 'k', fetchImpl: flaky, timeoutMs: 5 });
+  assert.equal(tries, 2, 'the timed-out call was not tried again');
+  assert.equal(rows[0].en, 'go mid');
+  assert.equal(rows[0].translated, true);
+});
+
+await okAsync('a call that hangs is raced, not waited for', async () => {
+  // The live game lost one line's call on both of its tries and showed it
+  // untranslated 10.6s late. A second call beside a silent first one is
+  // an answer in about a second.
+  let asked = 0;
+  const ask = () => {
+    asked++;
+    if (asked === 1) return new Promise(() => {});          // never answers
+    return Promise.resolve('[{"i":0,"en":"gg"}]');
+  };
+  const t0 = Date.now();
+  const text = await askGeminiHedged({}, { hedgeAfterMs: 20, ask });
+  assert.equal(text, '[{"i":0,"en":"gg"}]');
+  assert.equal(asked, 2);
+  assert.ok(Date.now() - t0 < 500, 'the hedge waited for the hung call');
+});
+
+await okAsync('every attempt lost is an error, and no more than three are made', async () => {
+  let asked = 0;
+  const ask = async () => { asked++; throw new Error('could not reach the model'); };
+  await assert.rejects(() => askGeminiHedged({}, { hedgeAfterMs: 5, ask }), /could not reach/);
+  assert.equal(asked, 3);
 });
 
 await okAsync('a line is shown at once and its English fills the same row', async () => {
@@ -724,9 +854,11 @@ await okAsync('the player\'s own translated line means what they TYPED - no call
   w.stop();
   assert.deepEqual(rows, [['my name is kristjan', true]]);
   assert.equal(calls, 0);
+  // And for everybody else's lines the translator is told to leave names alone.
+  assert.match(buildRequest([{ name: 'a', text: 'x' }]).systemInstruction.parts[0].text, /never swapped for an English name/);
 });
 
-await okAsync('with the translator down every line still goes up as said, and the player is told why ONCE', async () => {
+await okAsync('with Google down every line still goes up as said, and the player is told why ONCE', async () => {
   // SEEN: an hour of "high demand" and hung calls. Every line failed, the
   // lines looked dimmed and wrong to the user, and nothing said why.
   const { startWatchingMemory, explainModelError } = await import('./src/memwatcher.js');
@@ -742,14 +874,23 @@ await okAsync('with the translator down every line still goes up as said, and th
   w.stop();
   assert.deepEqual(rows, [['раз', false], ['два', false], ['три', false]]);
   assert.equal(told.length, 1);
-  assert.match(told[0], /The translator is not answering/);
-  assert.doesNotMatch(told[0], /Google/);
+  assert.match(told[0], /Google's translator is not answering/);
   assert.match(told[0], /nothing to do/);
-  // The server's refusals already say what to do: left alone.
-  assert.equal(explainModelError('used up, back tomorrow'), 'used up, back tomorrow');
+  // What Google says about a key or a quota already says what to do: left alone.
+  assert.equal(explainModelError('API key not valid'), 'API key not valid');
   assert.match(explainModelError('This model is currently experiencing high demand.'), /not answering/);
   // And an untranslated line is not dimmed: it is all the player will get.
   assert.match(fs.readFileSync(path.join('src', 'overlay.html'), 'utf8'), /[.]plain [.]say [{] color: inherit; [}]/);
+});
+
+await okAsync('a reply whose body never arrives is timed out like one that never came', async () => {
+  // Headers, then silence. The clock used to stop at the headers.
+  const stalls = async (url, init) => ({
+    ok: true,
+    json: () => new Promise((_, reject) => init.signal.addEventListener('abort', () => { const e = new Error('x'); e.name = 'AbortError'; reject(e); })),
+  });
+  const { askGemini } = await import('./src/translate.js');
+  await assert.rejects(() => askGemini({ apiKey: 'k', request: {}, fetchImpl: stalls, timeoutMs: 20 }), /took too long/);
 });
 
 await okAsync('a call that never settles does not keep its place in the pipeline', async () => {
@@ -829,6 +970,16 @@ await okAsync('a line that has waited too long for the limit is shown as it was 
   assert.deepEqual(out, [['a', true], ['late', false]]);
 });
 
+await okAsync('a refusal is the answer and is not asked twice', async () => {
+  let tries = 0;
+  const refuses = async () => {
+    tries++;
+    return { ok: false, status: 429, json: async () => ({ error: { message: 'quota' } }) };
+  };
+  await assert.rejects(() => translateBatch([{ name: 'A', text: 'иди мид' }], { apiKey: 'k', fetchImpl: refuses }));
+  assert.equal(tries, 1, 'a quota answer was asked for twice');
+});
+
 console.log('build');
 
 ok('the scanner script parses', () => {
@@ -886,7 +1037,41 @@ ok('every script parses', () => {
 
 console.log('setup');
 
+const { checkKey, tidyKey, looksLikeKey, explainKeyError } = await import('./src/keycheck.js');
 const { saveConfig } = await import('./src/config.js');
+
+ok('a pasted key is tidied the way people actually paste them', () => {
+  assert.equal(tidyKey('  abcDEF123_-x  '), 'abcDEF123_-x');
+  assert.equal(tidyKey('"abcDEF123",'), 'abcDEF123');       // copied out of a config file, quotes and comma and all
+  assert.equal(tidyKey('abc\n'), 'abc');
+  assert.equal(tidyKey(undefined), '');
+  assert.ok(looksLikeKey('A'.repeat(39)));
+  assert.ok(!looksLikeKey('too short'));
+  assert.ok(!looksLikeKey('has a space in the middle of it somewhere'));
+});
+
+await okAsync('a key is tried for real before it is called good, and nothing is asked for an obvious non-key', async () => {
+  let asked = 0;
+  const works = async (items, opts) => { asked++; assert.equal(opts.apiKey, 'K'.repeat(30)); return items.map((it) => ({ ...it, en: 'gg wp', translated: true })); };
+  const good = await checkKey('  "' + 'K'.repeat(30) + '", ', { translate: works });
+  assert.deepEqual([good.ok, good.en, good.key], [true, 'gg wp', 'K'.repeat(30)]);
+  assert.equal((await checkKey('', { translate: works })).ok, false);
+  assert.equal((await checkKey('not a key', { translate: works })).ok, false);
+  assert.equal(asked, 1, 'Google was asked about something that was plainly not a key');
+});
+
+await okAsync('a key that fails says what to DO, in the two ways this project has met', async () => {
+  const failing = (message) => async () => { throw new Error(message); };
+  const a = await checkKey('K'.repeat(30), { translate: failing('Your prepayment credits are depleted.') });
+  assert.match(a.why, /NO billing account/);
+  const b = await checkKey('K'.repeat(30), { translate: failing('Your project has been denied access.') });
+  assert.match(b.why, /different project/);
+  assert.match(explainKeyError('API key not valid. Please pass a valid API key.'), /Copy it again/);
+  assert.match(explainKeyError('You exceeded your current quota'), /Wait a minute/);
+  assert.match(explainKeyError('could not reach the model'), /internet/);
+  // And it never throws at a button.
+  assert.equal((await checkKey('K'.repeat(30), { translate: async () => [] })).ok, false);
+});
 
 ok('the app\'s own keys can be changed or turned off, never to a key that eats typing or the say keys', async () => {
   // A player, 2026-09-28: Alt+D "eats the input, preventing Dota from getting it".
@@ -915,11 +1100,9 @@ ok('the app\'s own keys can be changed or turned off, never to a key that eats t
 ok('saving from the setup window leaves the rest of the player\'s config alone', () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'dt-cfg-')), 'config.json');
   fs.writeFileSync(file, JSON.stringify({ fontSize: 20, myOwnNote: 'keep me', geminiApiKey: 'old' }));
-  const cfg = saveConfig({ display: 'box' }, file);
+  const cfg = saveConfig({ geminiApiKey: '', geminiApiKeyEnc: 'ZW5j', display: 'box' }, file);
   const onDisk = JSON.parse(fs.readFileSync(file, 'utf8'));
-  // An old key field is neither used nor deleted: it is the player's file.
-  assert.deepEqual(onDisk, { fontSize: 20, myOwnNote: 'keep me', geminiApiKey: 'old', display: 'box' });
-  assert.equal('geminiApiKey' in cfg, false);
+  assert.deepEqual(onDisk, { fontSize: 20, myOwnNote: 'keep me', geminiApiKey: '', geminiApiKeyEnc: 'ZW5j', display: 'box' });
   assert.equal(cfg.fontSize, 20);
   // No file yet, or one that will not parse: started afresh, not failed on.
   const none = path.join(path.dirname(file), 'new.json');
@@ -1125,13 +1308,13 @@ ok('the landing page keeps the promises the project made about how it talks', ()
   for (const claim of [/\bis safe\b/i, /\bcompletely safe\b/i, /\bundetectable\b/i, /\bban-?proof\b/i, /\bVAC[- ]safe\b/i]) {
     assert.doesNotMatch(text, claim, 'the landing page claims ' + claim);
   }
-  // No key on the page since v0.5.0 (the hosted translator).
+  // No key on the page since v0.5.0 (the hosted translator); the guide stays for an own key.
   assert.doesNotMatch(html, /Get a free Gemini key|paste the key|paste your key|need a free Gemini key/i, 'the landing page still asks for a key');
   assert.match(text, /translate\.dotatranslator\.live/);
   assert.match(text, /Nothing that is said is logged/);
-  // The own-key guide is gone with the own-key path (0.7.0), and no page offers a key.
-  assert.ok(!fs.existsSync(path.join('docs', 'key.html')));
-  for (const page of ['index.html', 'download.html', path.join('ru', 'index.html')]) assert.doesNotMatch(fs.readFileSync(path.join('docs', page), 'utf8'), /own (Gemini )?key|geminiApiKey|aistudio/i, page + ' offers an own key');
+  const guide = fs.readFileSync(path.join('docs', 'key.html'), 'utf8');
+  assert.doesNotMatch(guide, /AIza[0-9A-Za-z_-]{10,}/, 'something shaped like a real Google key is in the guide');
+  assert.match(guide, /not a screenshot/);
   // Visits are counted on the WEBSITE, on every page of it.
   // Never in the app: the README says what the app talks to, and that is all.
   for (const page of fs.readdirSync('docs').filter((f) => f.endsWith('.html'))) {
@@ -1286,7 +1469,7 @@ await okAsync('a Dota patch that breaks the fast reader is SAID, once, and taken
 
 console.log('saying something back');
 
-const { createOutgoing, createLanguageTracker, targetLanguage, tidySay, scriptOf, MAX_SAY } = await import('./src/outgoing.js');
+const { createOutgoing, createLanguageTracker, targetLanguage, buildOutRequest, outFrom, tidySay, scriptOf, MAX_SAY } = await import('./src/outgoing.js');
 
 ok('the reply language is what the others were last seen typing in', () => {
   const t = createLanguageTracker();
@@ -1314,15 +1497,29 @@ ok('what is typed is made one short line before it goes anywhere', () => {
   assert.equal(tidySay('  go   rosh \n now '), 'go rosh now');
   assert.equal(tidySay('x'.repeat(500)).length, MAX_SAY);
   assert.equal(tidySay(null), '');
+  const req = buildOutRequest('go rosh', 'Russian');
+  assert.match(req.systemInstruction.parts[0].text, /into Russian/);
+  assert.deepEqual(JSON.parse(req.contents[0].parts[0].text), { text: 'go rosh' });
+});
+
+ok('the reply is one line for a one-line chat field, or nothing', () => {
+  assert.equal(outFrom('{"out":"го рошан"}'), 'го рошан');
+  assert.equal(outFrom(JSON.stringify({ out: 'го\nрошан\t сейчас ' })), 'го рошан сейчас');
+  assert.equal(outFrom('not json'), '');
+  assert.equal(outFrom('{"out":5}'), '');
+  assert.equal(outFrom(''), '');
 });
 
 await okAsync('a repeat costs no call, and a failure is not remembered', async () => {
   let calls = 0, fail = true;
   const say = createOutgoing({
-    remote: () => async () => {
+    apiKey: () => 'k',
+    ask: async (opts, how) => {
       calls++;
+      assert.equal(opts.apiKey, 'k');
+      assert.equal(how.attempts, 2);               // the incoming chat lives on the same calls
       if (fail) throw new Error('the model took too long');
-      return 'го рошан';
+      return '{"out":"го рошан"}';
     },
   });
   await assert.rejects(() => say('go rosh', 'Russian'), /took too long/);
@@ -1340,18 +1537,18 @@ await okAsync('what was said once is said the same way after a restart, and the 
   let disk = null, calls = 0;
   const store = { read: () => { if (!disk) throw Object.assign(new Error('no file'), { code: 'ENOENT' }); return JSON.parse(disk); }, write: (all) => { disk = JSON.stringify(all); } };
   const answers = ['хорошая игра', 'найс плей'];               // the model, asked twice, says two things
-  const remote = () => async () => answers[calls++];
-  assert.equal((await createOutgoing({ remote, store })('nice play', 'Russian')).out, 'хорошая игра');
+  const ask = async () => JSON.stringify({ out: answers[calls++] });
+  assert.equal((await createOutgoing({ apiKey: 'k', ask, store })('nice play', 'Russian')).out, 'хорошая игра');
   // A new translator is a restart: same line, no call.
-  const again = await createOutgoing({ remote, store })('Nice play', 'Russian');
+  const again = await createOutgoing({ apiKey: 'k', ask, store })('Nice play', 'Russian');
   assert.deepEqual(again, { out: 'хорошая игра', language: 'Russian', cached: true });
   assert.equal(calls, 1);
   // The player's own correction wins, and is still one line.
   disk = JSON.stringify({ 'Russian|nice play': 'красиво\nсыграл', junk: 5 });
-  assert.equal((await createOutgoing({ remote, store })('nice play', 'Russian')).out, 'красиво сыграл');
+  assert.equal((await createOutgoing({ apiKey: 'k', ask, store })('nice play', 'Russian')).out, 'красиво сыграл');
   // A file that is not JSON is not a reason to say nothing.
   const broken = { read: () => JSON.parse('{nope'), write: () => { throw new Error('read-only'); } };
-  assert.equal((await createOutgoing({ remote, store: broken })('gg', 'Russian')).out, 'найс плей');
+  assert.equal((await createOutgoing({ apiKey: 'k', ask, store: broken })('gg', 'Russian')).out, 'найс плей');
 });
 
 const { sayTranslated, createKeySender } = await import('./src/sendchat.js');
@@ -1710,7 +1907,7 @@ ok('keys are sent from ONE place, only with the game in front, and nothing anywh
   ok('gsi: a newly written cfg tells the player to restart Dota; the feed is the default reader', () => {
     const status = [];
     let port = 0;
-    const w = startWatchingGsi({ ...DEFAULTS }, { onStatus: (s) => status.push(s.text) }, {
+    const w = startWatchingGsi({ ...DEFAULTS, geminiApiKey: 'x' }, { onStatus: (s) => status.push(s.text) }, {
       ensure: () => ({ state: 'written', dotaDir: null }),
       startSource: (o) => { port = o.port; return { stop() {} }; },
     });
@@ -1744,7 +1941,7 @@ ok('keys are sent from ONE place, only with the game in front, and nothing anywh
     assert.equal(killed, 1);
 
     let stopped = 0, given = null;
-    const g = startWatchingGsi({ ...DEFAULTS }, { onFocus: (on) => heard.push(on) }, {
+    const g = startWatchingGsi({ ...DEFAULTS, geminiApiKey: 'x' }, { onFocus: (on) => heard.push(on) }, {
       ensure: () => ({ state: 'present', dotaDir: null }),
       startSource: () => ({ stop() {} }),
       watchFocus: (o) => { given = o.onFocus; return { stop() { stopped++; } }; },
@@ -1998,7 +2195,7 @@ ok('keys are sent from ONE place, only with the game in front, and nothing anywh
     assert.match(helper, /not in front/);
 
     let given = null, stopped = 0, started = 0;
-    const mk = (cfg) => startWatchingGsi({ ...DEFAULTS, ...cfg }, {}, {
+    const mk = (cfg) => startWatchingGsi({ ...DEFAULTS, geminiApiKey: 'x', ...cfg }, {}, {
       ensure: () => ({ state: 'present', dotaDir: 'somewhere' }),
       startSource: (o) => { given = o.identify; return { stop() {} }; },
       watchFocus: () => ({ stop() {} }),
@@ -2047,7 +2244,7 @@ ok('keys are sent from ONE place, only with the game in front, and nothing anywh
 
     const layouts = [];
     let give = null;
-    const cfg = { ...DEFAULTS, display: 'above' };
+    const cfg = { ...DEFAULTS, geminiApiKey: 'x', display: 'above' };
     const windows = [];
     const g = startWatchingGsi(cfg, { onLayout: (l) => layouts.push(l), onWindow: (w) => windows.push(w) }, {
       ensure: () => ({ state: 'present', dotaDir: null }),
@@ -2081,47 +2278,9 @@ ok('gsi mode reads no memory: nothing of it opens the game, reads it, or starts 
 });
 
 {
-  const { createHosted, hashId, explainHosted } = await import('./src/hosted.js');
   const { readGsiPayload, createGsiChat } = await import('./src/gsisource.js');
-  const RU = String.fromCharCode(0x433, 0x433);
-  const ID = hashId('steam', '76561198000000001');
-  const refusal = async (p) => { try { await p; } catch (e) { return e; } return null; };
 
-  await okAsync('hosted: the app sends lines and a hash, keeps every row it was handed, and says a refusal in words', async () => {
-    const sent = [];
-    const reply = { status: 200, body: { lines: [{ en: 'go mid', translated: true }, { en: '', translated: false }] } };
-    const fetchImpl = async (url, o) => { sent.push({ url, body: JSON.parse(o.body) }); return { ok: reply.status === 200, status: reply.status, json: async () => reply.body }; };
-    const h = createHosted({ url: 'https://example.invalid/', id: () => ID, fetchImpl });
-    const rows = await h.translate([{ name: 'Ivan', text: RU, channel: 'team', slot: 3, id: 7 }, { name: 'x', text: RU + RU, channel: 'all', slot: 1, id: 8 }]);
-    assert.equal(sent[0].url, 'https://example.invalid/v1/translate');
-    assert.deepEqual(sent[0].body, { id: ID, lines: [{ name: 'Ivan', text: RU }, { name: 'x', text: RU + RU }] });
-    assert.deepEqual(rows[0], { name: 'Ivan', text: RU, channel: 'team', slot: 3, id: 7, en: 'go mid', translated: true });
-    assert.deepEqual(rows[1], { name: 'x', text: RU + RU, channel: 'all', slot: 1, id: 8, en: RU + RU, translated: false });
-    await h.ping();
-    assert.equal(sent[1].url, 'https://example.invalid/v1/ping');
-    assert.deepEqual(sent[1].body, { id: ID });
-    reply.status = 500; reply.body = {};
-    await h.ping();                                                     // a failed ping is silent
-    reply.status = 429; reply.body = { error: 'allowance' };
-    assert.match((await refusal(h.translate([{ text: RU }]))).message, /come back tomorrow/);
-    assert.match(explainHosted('budget'), /back on the 1st/);
-    // The id is a hash: a Steam id never leaves the PC as itself.
-    assert.match(ID, /^[a-f0-9]{64}$/);
-    assert.ok(!ID.includes('76561198'));
-    assert.notEqual(hashId('steam', '1'), hashId('install', '1'));
-    // Which kind of id it is goes with it (the owner's page counts confirmed
-    // Steam players), and nothing else: still no Steam id in the body.
-    let k = 'install';
-    const h2 = createHosted({ url: 'https://example.invalid', id: () => ID, kind: () => k, fetchImpl });
-    reply.status = 200; reply.body = { ok: true };
-    await h2.ping();
-    k = 'steam';
-    await h2.ping();
-    assert.deepEqual(sent.slice(-2).map((x) => x.body), [{ id: ID, kind: 'install' }, { id: ID, kind: 'steam' }]);
-    assert.ok(!JSON.stringify(sent).includes('76561198'));
-  });
-
-  ok('hosted: the feed says who the local player is, once; a spectator\'s payload names nobody', () => {
+  ok('the feed says who the local player is, once; a spectator\'s payload names nobody', () => {
     const body = (steamid) => JSON.stringify({ provider: {}, map: { matchid: '1' }, player: { name: 'me', steamid, team_name: 'radiant', team_slot: 0 }, events: [] });
     assert.equal(readGsiPayload(body('76561198000000001')).steamid, '76561198000000001');
     assert.equal(readGsiPayload(body('<script>')).steamid, '');
@@ -2149,109 +2308,8 @@ ok('gsi mode reads no memory: nothing of it opens the game, reads it, or starts 
     assert.match(fs.readFileSync(path.join('src', 'main.js'), 'utf8'), /onSelf: \(self\) => \{ me = /);
   });
 
-  ok('hosted: it is the only translator, it is off until there is an address, and the server is not in this repository', () => {
-    assert.ok(!fs.existsSync('server'), 'the server is a PRIVATE repository: it must not be in this one');
-    const main = fs.readFileSync(path.join('src', 'main.js'), 'utf8');
-    // 0.7.x: the server is the only translator; there is no own key.
-    assert.match(main, /translate: \(batch\) => hosted\.translate\(batch\),/);
-    assert.match(main, /const viaServer = \(\) => hostedOn\(\);/);
-    assert.equal(DEFAULTS.hostedUrl, 'https://translate.dotatranslator.live');
-  });
 }
 
-
-// ---- Accounts (0.7.0): sign-in, the session, the hwid, what is shown ----
-{
-  const { createAccount, describeAccount, explainAccount } = await import('./src/account.js');
-  const { createHosted, explainHosted } = await import('./src/hosted.js');
-  const { hwidFrom, guidFromReg, readHwid } = await import('./src/hwid.js');
-  const { explainModelError } = await import('./src/memwatcher.js');
-
-  await okAsync('hwid: sha256 of "dota-translator|hwid|" + the MachineGuid, read from reg.exe output; nothing else leaves the PC', async () => {
-    const out = '\r\nHKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography\r\n    MachineGuid    REG_SZ    1B2C3D4E-0000-1111-2222-333344445555\r\n';
-    assert.equal(guidFromReg(out), '1b2c3d4e-0000-1111-2222-333344445555');
-    assert.equal(guidFromReg('nothing here'), '');
-    const want = (await import('node:crypto')).createHash('sha256').update('dota-translator|hwid|1b2c3d4e-0000-1111-2222-333344445555').digest('hex');
-    assert.equal(hwidFrom('1B2C3D4E-0000-1111-2222-333344445555'), want);
-    let asked = null;
-    const h = await readHwid({ run: (cmd, args, o, cb) => { asked = [cmd, args]; cb(null, out); } });
-    assert.equal(h, want);
-    assert.deepEqual(asked, ['reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid', '/reg:64']]);
-    assert.equal(await readHwid({ run: (c, a, o, cb) => cb(new Error('no')) }), '');
-  });
-
-  await okAsync('sign in: e-mail + hwid, then the code or the polled link; the token is kept by the store and sent only as a header', async () => {
-    let kept = '';
-    const store = { get: () => kept, set: (t) => { kept = t; } };
-    const sent = [];
-    const replies = { '/v1/auth/start': { pending: 'P' }, '/v1/auth/verify': { token: 'TOKEN_abcdefghijklmnopqrstuvwxyz', email: 'a@b.cd', state: 'trial', trialEnds: 9 }, '/v1/auth/poll': { waiting: true }, '/v1/me': { state: 'trial' }, '/v1/pay/ticket': { url: 'https://srv/pay?t=x' } };
-    const fetchImpl = async (url, o) => { const route = new URL(url).pathname; sent.push({ route, headers: o.headers, body: JSON.parse(o.body) }); return { ok: true, status: 200, json: async () => replies[route] }; };
-    const acc = createAccount({ url: 'https://srv/', version: '0.7.0', hwid: () => 'H'.repeat(64), store, fetchImpl });
-    assert.deepEqual(await acc.start('a@b.cd'), { pending: 'P' });
-    assert.deepEqual(sent[0].body, { email: 'a@b.cd', hwid: 'H'.repeat(64) });
-    assert.deepEqual(await acc.poll('P'), { waiting: true });
-    const st = await acc.verify('a@b.cd', '123 456');
-    assert.equal(sent[2].body.code, '123456');
-    assert.equal(kept, 'TOKEN_abcdefghijklmnopqrstuvwxyz');
-    assert.equal(st.token, undefined);                                  // the token goes to the store, not back to the page
-    await acc.me();
-    assert.equal(sent[3].headers.authorization, 'Bearer TOKEN_abcdefghijklmnopqrstuvwxyz');
-    assert.equal(sent[3].headers['x-dt-hwid'], 'H'.repeat(64));
-    assert.equal(sent[3].headers['user-agent'], 'dota-translator/0.7.0');
-    assert.ok(!sent.some((x) => JSON.stringify(x.body).includes('TOKEN_')));
-    assert.equal(await acc.payUrl(), 'https://srv/pay?t=x');
-    // A dead session is forgotten.
-    const dead = createAccount({ url: 'https://srv', store, fetchImpl: async () => ({ ok: false, status: 401, json: async () => ({ error: 'login' }) }) });
-    await assert.rejects(dead.me(), /signed out/);
-    assert.equal(kept, '');
-    assert.match(explainAccount('code', { left: 3 }), /3 tries left/);
-  });
-
-  await okAsync('hosted: the session and the hwid go as headers; login / trial_over / hwid / update are said in words, and the app hears them', async () => {
-    const heard = [];
-    let hdr = null;
-    const h = createHosted({ url: 'https://srv', id: () => 'a'.repeat(64), version: '0.7.0', token: () => 'T'.repeat(43), hwid: () => 'h'.repeat(64), onRefused: (c) => heard.push(c),
-      fetchImpl: async (u, o) => { hdr = o.headers; return { ok: false, status: 402, json: async () => ({ error: 'trial_over', state: 'expired' }) }; } });
-    const e = await h.say('hi', 'Russian').catch((x) => x);
-    assert.match(e.message, /free trial is over/);
-    assert.deepEqual(heard, ['trial_over']);
-    assert.equal(hdr.authorization, 'Bearer ' + 'T'.repeat(43));
-    assert.equal(hdr['x-dt-hwid'], 'h'.repeat(64));
-    for (const c of ['login', 'trial_over', 'hwid', 'update']) {
-      assert.ok(explainHosted(c));
-      assert.equal(explainModelError(explainHosted(c)), explainHosted(c));   // shown as written, not as "Google is not answering"
-    }
-    const plain = createHosted({ url: 'https://srv', id: () => 'a'.repeat(64), fetchImpl: async (u, o) => { hdr = o.headers; return { ok: true, status: 200, json: async () => ({ ok: true, account: { state: 'paid' } }) }; } });
-    let acct = null;
-    await plain.ping((a) => { acct = a; });
-    assert.equal(acct.state, 'paid');
-    assert.equal(hdr.authorization, undefined);                         // no session, no header
-  });
-
-  ok('what the tray and the window say: trial with days left, paid until a date, lifetime, expired with Buy', () => {
-    const n = Date.UTC(2026, 9, 6, 12);
-    assert.deepEqual(describeAccount({ state: 'trial', trialEnds: n + 2 * 86400000 }, n), { text: 'Free trial: 2 days left', buy: true });
-    assert.deepEqual(describeAccount({ state: 'trial', trialEnds: n + 3600000 }, n), { text: 'Free trial: 1 day left', buy: true });
-    assert.deepEqual(describeAccount({ state: 'paid', paidUntil: Date.UTC(2027, 3, 6) }, n), { text: 'Paid until 6 Apr 2027', buy: false });
-    assert.equal(describeAccount({ state: 'paid', paidUntil: n + 86400000 }, n).buy, true);   // two weeks before the end: Buy again
-    assert.deepEqual(describeAccount({ state: 'lifetime' }, n), { text: 'Lifetime access', buy: false });
-    assert.deepEqual(describeAccount({ state: 'expired' }, n), { text: 'Trial over - buy to keep translating', buy: true });
-    assert.deepEqual(describeAccount(null, n), { text: 'Not signed in', buy: false });
-  });
-
-  ok('the session is kept encrypted like the old key, never shown to the page, and an own key still needs no account', () => {
-    const main = fs.readFileSync(path.join('src', 'main.js'), 'utf8');
-    assert.match(main, /sessionEnc: safeStorage\.encryptString\(t\)/);
-    assert.match(main, /const accountView = \(\) => \(\{ signedIn: signedIn\(\)/);
-    assert.doesNotMatch(main.slice(main.indexOf('const accountView'), main.indexOf('const accountView') + 300), /session\.get/);
-    const pre = fs.readFileSync(path.join('src', 'setup-preload.cjs'), 'utf8');
-    assert.doesNotMatch(pre, /sessionEnc|session\.get/);
-    // The Buy page opens with a ticket the server hands out, never the session in a URL.
-    assert.match(main, /shell\.openExternal\(await account\.payUrl\(\)\)/);
-    assert.equal(DEFAULTS.sessionEnc, '');
-    assert.equal(JSON.parse(fs.readFileSync('package.json', 'utf8')).version, '0.7.0');
-  });
-}
 
 // ---- Spanish: the one language told apart by its WORDS, not its script ----
 const { looksSpanish } = await import('./src/spanish.js');
@@ -2323,38 +2381,21 @@ await okAsync('eight-language review fixes: the gates, the detector, Ukrainian a
   assert.equal(scriptOf('помогите на миду'), 'cyrillic');
   assert.equal(scriptOf('داداش برو پایین کمک'), 'persian');
   assert.equal(scriptOf('روحوا ميد'), 'arabic');
-  // said.json: a hosted line carries its prompt version and is asked again when the server's version moves on.
-  let saved = { 'Russian|hi': { out: 'старое', v: 'aaaaaaaa' }, 'Russian|by hand': 'как я написал', '#versions': { Russian: 'aaaaaaaa' } };
+  // said.json from 0.5-0.7 (objects with a server version and fingerprint): the line is read, and written back plain.
+  let saved = { 'Russian|hi': { out: 'старое', v: 'aaaaaaaa', h: '1' }, 'Russian|by hand': 'как я написал', '#versions': { Russian: 'aaaaaaaa' } };
   let asked = 0;
-  const say = createOutgoing({ store: { read: () => saved, write: (a) => { saved = a; } }, remote: () => async () => { asked++; return { out: 'привет', v: 'bbbbbbbb' }; } });
-  assert.equal((await say('hi', 'Russian')).out, 'старое');                    // still current
-  say.learn({ Russian: 'bbbbbbbb' });
-  assert.equal((await say('hi', 'Russian')).out, 'привет');                    // stale: asked again
+  const say = createOutgoing({ apiKey: 'k', store: { read: () => saved, write: (a) => { saved = a; } }, ask: async () => { asked++; return '{"out":"привет"}'; } });
+  assert.equal((await say('hi', 'Russian')).out, 'старое');
+  assert.equal((await say('by hand', 'Russian')).out, 'как я написал');
+  assert.equal((await say('new', 'Russian')).out, 'привет');
   assert.equal(asked, 1);
-  assert.equal((await say('by hand', 'Russian')).out, 'как я написал');        // a corrected line is kept
-  assert.deepEqual([saved['Russian|hi'].out, saved['Russian|hi'].v], ['привет', 'bbbbbbbb']);
-  assert.equal(saved['Russian|by hand'], 'как я написал');
-  assert.equal(saved['#versions'].Russian, 'bbbbbbbb');
+  assert.deepEqual(saved, { 'Russian|hi': 'старое', 'Russian|by hand': 'как я написал', 'Russian|new': 'привет' });
   // The "Saved." notes sit under their own blocks, not by Close.
   const html = fs.readFileSync('src/setup.html', 'utf8');
   assert.ok(html.includes('id="displayNow"') && html.includes('id="moreNow"') && !html.includes('id="savedNow"'));
 });
 await okAsync('review round 2: legacy said.json lines asked once more, hand edits kept, Persian by keyboard, Spanish ordinals and contractions', async () => {
   const { scriptOf, createOutgoing } = await import('./src/outgoing.js');
-  // A 0.6.3 file (no #versions): its hosted lines are asked again once the server's version is known.
-  let saved = { 'Russian|going top help': 'иду на топ помогать' };
-  let asked = 0;
-  const say = createOutgoing({ store: { read: () => saved, write: (a) => { saved = a; } }, remote: () => async () => { asked++; return { out: 'иду топ, помогите', v: 'cccccccc' }; } });
-  assert.equal((await say('going top help', 'Russian')).out, 'иду на топ помогать');   // nothing known yet: as before
-  say.learn({ Russian: 'cccccccc' });
-  assert.equal((await say('going top help', 'Russian')).out, 'иду топ, помогите');
-  assert.equal(asked, 1);
-  // A line the player edits in the file (fingerprint no longer matches) is kept through a prompt change.
-  saved['Russian|going top help'] = { ...saved['Russian|going top help'], out: 'иду топ, помогите мне' };
-  const say2 = createOutgoing({ store: { read: () => saved, write: (a) => { saved = a; } }, remote: () => async () => { asked++; return { out: 'x', v: 'dddddddd' }; } });
-  say2.learn({ Russian: 'dddddddd' });
-  assert.equal((await say2('going top help', 'Russian')).out, 'иду топ, помогите мне');
-  assert.equal(asked, 1);
   // Persian by keyboard letters; Iraqi Arabic with چ and گ stays Arabic.
   assert.equal(scriptOf('کمک کنید'), 'persian');          // کمک کنید
   assert.equal(scriptOf('شكو ماكو چاي'), 'arabic'); // شكو ماكو چاي
@@ -2368,16 +2409,11 @@ await okAsync('review round 3: exact Spanish ordinals, Spanish marks only, pa\'l
   const { createOutgoing } = await import('./src/outgoing.js');
   for (const s of ['defiendan la 2da torre', 'vamos a la 3er torre', "vamos pa'l mid", "pa'lante todos", 'wallah ¿donde estan?']) assert.equal(looksSpanish(s), true, s);
   for (const e of ['ya 3mo el carry 5ra', 'el 2na mid', 'khalas el feeder é nul']) assert.equal(looksSpanish(e), false, e);
-  // A said.json that is there but will not parse is left alone, even when the heartbeat teaches a version.
+  // A said.json that is there but will not parse is left alone, even after a new line is said.
   let writes = 0;
-  const broken = createOutgoing({ store: { read: () => { throw new SyntaxError('Unexpected token'); }, write: () => { writes++; } } });
-  broken.learn({ Russian: 'eeeeeeee' });
+  const broken = createOutgoing({ apiKey: 'k', ask: async () => '{"out":"x"}', store: { read: () => { throw new SyntaxError('Unexpected token'); }, write: () => { writes++; } } });
+  await broken('gg', 'Russian');
   assert.equal(writes, 0);
-  // A stale line is said when the server cannot answer.
-  let saved = { 'Russian|hi': { out: 'старое', v: 'aaaaaaaa' }, '#versions': { Russian: 'bbbbbbbb' } };
-  const down = createOutgoing({ store: { read: () => saved, write: (a) => { saved = a; } }, remote: () => async () => { throw new Error('http 502'); } });
-  assert.equal((await down('hi', 'Russian')).out, 'старое');
-  await assert.rejects(down('never said', 'Russian'));
 });
 
 await okAsync("review round 4: pa'l only with its apostrophe, salu2 with an accent is Spanish", async () => {
@@ -2385,65 +2421,88 @@ await okAsync("review round 4: pa'l only with its apostrophe, salu2 with an acce
   for (const e of ['gg pal', 'calm down pal', 'nice one pal']) assert.equal(looksSpanish(e), false, e);
 });
 
-console.log('no own key (closed client)');
+console.log('0.8.0: free again, own key required');
 
-ok('nothing in src/ can call Google directly or handle a key of its own', () => {
-  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => d.name === 'node_modules' ? [] : d.isDirectory() ? walk(path.join(dir, d.name)) : [path.join(dir, d.name)]);
+ok('nothing in src/ talks to the hosted translator, and no account code is left', () => {
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => d.isDirectory() ? walk(path.join(dir, d.name)) : [path.join(dir, d.name)]);
   for (const f of walk('src')) {
-    const text = fs.readFileSync(f, 'utf8');
-    for (const word of ['generativelanguage.googleapis.com', 'geminiApiKey', 'x-goog-api-key']) assert.ok(!text.includes(word), f + ' contains ' + word);
+    const text = fs.readFileSync(f, 'latin1');
+    assert.ok(!/translate\.dotatranslator\.live/.test(text), f + ' mentions the hosted translator');
+    assert.ok(!/\/v1\/(ping|translate|say|auth|me)\b|hostedUrl|sessionEnc|x-dt-hwid/.test(text), f + ' still has hosted or account code');
   }
-  assert.ok(!fs.existsSync(path.join('src', 'translate.js')) && !fs.existsSync(path.join('src', 'keycheck.js')));
+  for (const gone of ['hosted.js', 'account.js', 'hwid.js']) assert.ok(!fs.existsSync(path.join('src', gone)), gone + ' is back');
+  assert.equal('hostedUrl' in DEFAULTS, false);
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  assert.equal(pkg.version, '0.8.0');
+  assert.ok(!pkg.build.files.includes('docs/key.html'), 'the app opens the live guide; the file is not needed in the build');
+  assert.equal(pkg.build.publish[0].repo, 'dota-translator-releases');
 });
 
-ok('an old config.json with key fields is read without them, and nothing breaks', () => {
-  const before = process.env.GEMINI_API_KEY;
-  process.env.GEMINI_API_KEY = 'from-env';
-  const cfg = mergeConfig({ geminiApiKey: 'old', geminiApiKeyEnc: 'ZW5j', fontSize: 20 });
-  if (before === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = before;
-  assert.equal(cfg.fontSize, 20);
-  assert.equal('geminiApiKey' in cfg, false);
-  assert.equal('geminiApiKeyEnc' in cfg, false);
-  assert.ok(!JSON.stringify(cfg).includes('from-env'));
+await okAsync('temperature goes only to a model below Gemini 3.6; top_p, top_k and thinking never', async () => {
+  const { samplingAllowed, forModel, askGemini } = await import('./src/translate.js');
+  for (const m of ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'models/gemini-3.1-pro', 'gemini-3.5']) assert.equal(samplingAllowed(m), true, m);
+  for (const m of ['gemini-3.6-flash', 'gemini-3.10-flash', 'gemini-4.0-pro', 'gemini-flash-latest', 'gemma-3', '']) assert.equal(samplingAllowed(m), false, m);
+  const req = { contents: [], generationConfig: { temperature: 0.2, topP: 0.9, topK: 4, thinkingConfig: { thinkingBudget: 0 }, maxOutputTokens: 9 } };
+  assert.deepEqual(forModel(req, 'gemini-3.5-flash-lite').generationConfig, { maxOutputTokens: 9, temperature: 0.2 });
+  assert.deepEqual(forModel(req, 'gemini-3.6-flash').generationConfig, { maxOutputTokens: 9 });
+  assert.equal(req.generationConfig.temperature, 0.2, 'the caller\'s request was changed');
+  // And it is what really goes over the wire.
+  const sent = [];
+  const fetchImpl = async (url, o) => { sent.push(JSON.parse(o.body)); return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: 'x' }] } }] }) }; };
+  await askGemini({ apiKey: 'k', model: 'gemini-3.6-flash', request: req, fetchImpl });
+  await askGemini({ apiKey: 'k', model: 'gemini-3.5-flash-lite', request: req, fetchImpl });
+  assert.equal('temperature' in sent[0].generationConfig, false);
+  assert.equal(sent[1].generationConfig.temperature, 0.2);
+  for (const b of sent) assert.ok(!/thinking|topP|topK/i.test(JSON.stringify(b)));
 });
 
-await okAsync('Ctrl+Enter with no signed-in translator says to sign in and calls nothing', async () => {
-  const { NOT_SIGNED_IN } = await import('./src/config.js');
-  assert.match(NOT_SIGNED_IN, /Sign in to translate/);
-  await assert.rejects(() => createOutgoing({})('go mid', 'Russian'), (e) => e.message === NOT_SIGNED_IN);
-  await assert.rejects(() => createOutgoing({ remote: () => null })('go mid', 'Russian'), (e) => e.message === NOT_SIGNED_IN);
+ok('the settings window is told only WHETHER there is a key, never the key', () => {
+  const main = fs.readFileSync(path.join('src', 'main.js'), 'utf8');
+  const state = main.slice(main.indexOf("ipcMain.handle('setup:state'"), main.indexOf('\n', main.indexOf("ipcMain.handle('setup:state'")));
+  assert.match(state, /hasKey: hasKey\(\)/);
+  assert.doesNotMatch(state, /geminiApiKey|storedKey|settings: cfg\b/);
+  const saveKey = main.slice(main.indexOf("ipcMain.handle('setup:key'"), main.indexOf('\n});', main.indexOf("ipcMain.handle('setup:key'")));
+  assert.match(saveKey, /checkKey\(key/);                                 // tried before it is saved
+  assert.match(saveKey, /safeStorage\.encryptString\(r\.key\)/);         // and kept encrypted
+  assert.match(saveKey, /return \{ ok: true, hasKey: true, sample: r\.sample, en: r\.en \}/);
+  assert.doesNotMatch(saveKey.slice(saveKey.lastIndexOf('return')), /key: /);
+  const pre = fs.readFileSync(path.join('src', 'setup-preload.cjs'), 'utf8');
+  assert.doesNotMatch(pre, /geminiApiKey|getKey/);
+  assert.match(pre, /saveKey: \(key\) => ipcRenderer\.invoke\('setup:key', key\)/);
+  assert.match(main, /shell\.openExternal\('https:\/\/dotatranslator\.live\/key\.html'\)/);
+  assert.match(main, /const FEEDBACK_URL = 'mailto:support@dotatranslator\.live';/);
+  // With no key the window is the key and nothing else; with one, a line to change it.
+  const html = fs.readFileSync(path.join('src', 'setup.html'), 'utf8');
+  assert.match(html, /id="checkKey"[^>]*>Check and save</);
+  assert.match(html, /Gemini key saved &middot; <button class="link" id="changeKey"/);
+  assert.match(html, /straight to Google's Gemini with your own key; nothing goes to us/);
+  assert.doesNotMatch(html, /HWID|Sign in|trial|Buy/i);
+  assert.match(fs.readFileSync(path.join('src', 'setup.js'), 'utf8'), /\$\('settingsArea'\)\.hidden = !hasKey;/);
 });
 
-await okAsync('the chat readers with no translator fail the line with the sign-in error', async () => {
-  const { NOT_SIGNED_IN } = await import('./src/config.js');
-  const { startWatchingMemory } = await import('./src/memwatcher.js');
+await okAsync('with no key: the window opens and no reader starts; a reader with no key says so once in half an hour', async () => {
+  const main = fs.readFileSync(path.join('src', 'main.js'), 'utf8');
+  const body = main.slice(main.indexOf('async function start()'), main.indexOf('watcher = start(cfg'));
+  assert.match(body, /const ready = hasKey\(\);/);
+  assert.match(body, /openSetup\(\);\s*if \(!ready\) \{ noKeyNotice\(\); return; \}/);
+  const { NO_KEY } = await import('./src/config.js');
+  assert.equal(NO_KEY, 'Add your free Gemini key: tray icon > Settings');
+  const { startWatchingMemory, explainModelError } = await import('./src/memwatcher.js');
+  assert.equal(explainModelError('no Gemini API key'), NO_KEY);
   let say = null;
   const told = [], rows = [];
-  const w = startWatchingMemory({ ...mergeConfig({}), batchMs: 1 }, {
+  const w = startWatchingMemory({ ...mergeConfig({}), geminiApiKey: '', batchMs: 1 }, {
     startSource: (opts) => { say = opts.onMessage; return { stop() {} }; },
     onStatus: (s) => { if (s.kind === 'error') told.push(s.text); },
     onResult: (row) => rows.push([row.text, row.translated]),
   });
   say({ name: 'A', text: 'го мид', channel: 'team', slot: 1 });
   await tick(30);
+  say({ name: 'B', text: 'го топ', channel: 'team', slot: 2 });
+  await tick(30);
   w.stop();
-  assert.deepEqual(rows, [['го мид', false]]);
-  assert.deepEqual(told, [NOT_SIGNED_IN]);
-
-  const { startWatching } = await import('./src/watcher.js');
-  const file = tmpLog();
-  fs.writeFileSync(file, '');
-  const told2 = [], rows2 = [];
-  const l = startWatching({ ...mergeConfig({}), logPath: file, batchMs: 1 }, {
-    onStatus: (s) => { if (s.kind === 'error') told2.push(s.text); },
-    onResult: (row) => rows2.push([row.text, row.translated]),
-  });
-  await tick(100);
-  fs.appendFileSync(file, 'Иван: го рошан\n');
-  await tick(1200);
-  l.stop();
-  assert.deepEqual(rows2, [['го рошан', false]]);
-  assert.ok(told2.includes(NOT_SIGNED_IN), JSON.stringify(told2));
+  assert.deepEqual(rows, [['го мид', false], ['го топ', false]]);
+  assert.deepEqual(told, [NO_KEY]);
 });
 
 console.log('\n' + passed + ' passed');

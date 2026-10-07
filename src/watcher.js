@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { LogTail, chatToTranslate, parseChatLine, needsTranslation, findLogPath } from './chatlog.js';
 import { createPipeline } from './pipeline.js';
-import { DATA_DIR, NOT_SIGNED_IN } from './config.js';
+import { translateBatch } from './translate.js';
+import { DATA_DIR } from './config.js';
 
 export function resolveLogPath(cfg) {
   if (cfg.logPath) return cfg.logPath;
@@ -24,7 +25,10 @@ export function startWatching(cfg, { onResult, onStatus = () => {}, translate } 
     onStatus({ kind: 'ready', text: 'Watching chat.', file });
   }
 
-  const doTranslate = translate || (() => Promise.reject(new Error(NOT_SIGNED_IN)));
+  const doTranslate = translate || ((batch) => translateBatch(batch, {
+    apiKey: cfg.geminiApiKey,
+    model: cfg.model,
+  }));
 
   const pipe = createPipeline({
     translate: doTranslate,

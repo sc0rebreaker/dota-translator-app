@@ -9,6 +9,57 @@ use English. That is the whole point of it.
 
 ---
 
+## >>> 0.8.0: FREE AGAIN, OWN KEY REQUIRED (the owner, 2026-10-08) <<<
+
+READ THIS FIRST: the ACCOUNTS section below (0.7.0: sign-in, trial, HWID,
+payments, the hosted translator) is HISTORY. The app is free forever again
+and the source goes public again. A player's OWN Gemini key is REQUIRED:
+with none, nothing is translated. The app never contacts
+translate.dotatranslator.live (a test greps src/ for it, for /v1/ routes,
+hostedUrl, sessionEnc and x-dt-hwid). Version 0.8.0; NOT tagged, NOT released.
+
+- REMOVED: src/account.js, src/hosted.js, src/hwid.js; sign-in, trial, Buy,
+  HWID reset, the tray's account line and Buy item, every `account:*` IPC,
+  the heartbeat (/v1/ping), `hostedUrl`, `installId`, `session(Enc)`,
+  NOT_SIGNED_IN, and said.json's server version / fingerprint (`#versions`,
+  `v`, `h`): said.json is plain `"Language|english": "line"` again; an old
+  file's object entries are read as their `out` and written back plain.
+- RESTORED FROM v0.6.10 (the last public client; the server's prompts were
+  improved after it and are NOT here - they are private): src/translate.js
+  (incoming prompt, askGemini, askGeminiHedged, translateBatch),
+  src/keycheck.js, outgoing.js's own prompt (outSystem / buildOutRequest /
+  outFrom, `apiKey` / `model` / `ask`), memwatcher / watcher / watch.js /
+  config.js defaulting to translateBatch with `geminiApiKey`, `model`
+  (default gemini-3.5-flash-lite), GEMINI_API_KEY winning, and docs/key.html
+  as it was in v0.6.10 (NOT in build.files: the app opens the live page).
+- NEW: `samplingAllowed` / `forModel` in translate.js (Google's notice of
+  2026-10-07): temperature only for gemini-X.Y below 3.6; topP / topK /
+  thinkingConfig never sent. Tested on the wire with a fake fetch.
+- The settings window: no key = headline "Add your key", the key field
+  ("Check and save", tried with one real translation via checkKey before it
+  is saved, encrypted with safeStorage as `geminiApiKeyEnc`), a link to
+  https://dotatranslator.live/key.html, and the settings hidden. With a key:
+  the settings, and a foot line "Gemini key saved · Change" that shows the
+  field again. The page is told `hasKey` only, never the key (IPC
+  `setup:key`, `setup:guide`). Trust line: chat goes from the PC straight to
+  Google's Gemini with the player's own key; nothing goes to us.
+- No key at startup: the window opens, NO reader starts, and the overlay is
+  sent "Add your free Gemini key: tray icon > Settings" (NO_KEY, at most once
+  in half an hour; memwatcher says it once in 30 min too if ever run keyless).
+  Ctrl+Enter with no key says the same. Tray feedback stays
+  mailto:support@dotatranslator.live; publish stays on -releases.
+- `npm test`: 146 before, 160 after (account/hosted/hwid tests removed;
+  v0.6.10's translate, keycheck and outgoing tests restored and adapted; new
+  ones for the above).
+- NOT VERIFIED: nothing was run in Electron (the window's two states, the
+  key check against Google, safeStorage, the overlay notice - all unseen);
+  whether the NO_KEY line shows at all when no reader runs (the overlay is
+  only up while Dota is in front, which the reader's focus signal decides -
+  with no reader it may never be seen; the setup window is the real notice);
+  README, SECURITY.md, the site and release.yml still describe 0.7.
+
+
+
 ## >>> MEMORY READING IS GONE (the user, 2026-09-22: "memory reading will not stay") <<<
 
 READ THIS FIRST; much of what is below it describes the memory reader and is

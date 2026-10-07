@@ -24,18 +24,20 @@ export const DATA_DIR = PACKAGED
 if (PACKAGED) { try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch { /* it will say so when it cannot save */ } }
 export const onDisk = (file) => file.replace('app.asar' + path.sep, 'app.asar.unpacked' + path.sep);
 // DT_CONFIG points the app at another file: for trying the first-run
-// window without touching the real settings.
+// window without touching the real settings or the real key.
 export const CONFIG_PATH = process.env.DT_CONFIG || path.join(DATA_DIR, 'config.json');
 
-// Said when there is nothing to translate with: every translation goes
-// through the hosted translator, behind a signed-in session.
-export const NOT_SIGNED_IN = 'Sign in to translate (tray icon > Settings).';
+// Said in the game when there is no key to translate with (once in half an
+// hour: it is not going away mid-match).
+export const NO_KEY = 'Add your free Gemini key: tray icon > Settings';
 
 export const DEFAULTS = {
-  // The hosted translator's session (0.7.0, src/account.js), encrypted by
-  // safeStorage like the key; `session` in plain only where that is unavailable.
-  sessionEnc: '',
-  session: '',
+  geminiApiKey: '',
+  // The same key as the setup window saves it: encrypted by Windows for
+  // this user (Electron safeStorage, which is DPAPI), base64. Only the app
+  // can read it back - a terminal run (npm run watch) cannot, and wants the
+  // plain field above or GEMINI_API_KEY.
+  geminiApiKeyEnc: '',
   model: 'gemini-3.5-flash-lite',
   logPath: '',              // blank = find the Steam install
   // 'memory' reads the game; 'gsi' listens to Dota's own Game State
@@ -169,16 +171,9 @@ export const DEFAULTS = {
   // (US) or Chinese (SEA). It picks which languages are read and which Ctrl+Enter goes into
   // until a line has been seen. The setup window's first choice.
   theirLanguage: 'Russian',
-  // Where the tray's "Report a problem..." goes. Blank is the project's
-  // GitHub issue chooser.
+  // Where the tray's "Send feedback" goes (https or mailto). Blank is
+  // support@dotatranslator.live.
   feedbackUrl: '',
-  // The hosted translator (server/): used when the player has NO key of their
-  // own, so that the app works straight after installing. Blank = there is
-  // none, and the app asks for a key as it always did. A key always wins.
-  hostedUrl: 'https://translate.dotatranslator.live',
-  // A random id for this install, made on first use: who is asking, until
-  // the game's feed has said which player this is. Only its hash is sent.
-  installId: '',
   learn: false,             // log unmatched lines to learn.log
 };
 
@@ -194,6 +189,8 @@ export function mergeConfig(raw) {
     }
     if (typeof raw[key] === want) out[key] = raw[key];
   }
+  // An env var wins, so a key need never be written to disk.
+  if (process.env.GEMINI_API_KEY) out.geminiApiKey = process.env.GEMINI_API_KEY;
   return out;
 }
 

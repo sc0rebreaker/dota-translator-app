@@ -6,7 +6,7 @@
 <title>Dota Translator</title>
 <style>
   /* The setup window: where a player who has never opened a config file
-     signs in and picks the look. Dressed as the landing page is, but with no web
+     pastes a key and picks the look. Dressed as the landing page is, but with no web
      fonts - this window must look right with no internet at all. */
   :root {
     --bg: #0a0d10; --panel: #11161b; --line: rgba(200, 215, 230, 0.12); --line-strong: rgba(200, 215, 230, 0.24);
@@ -49,7 +49,7 @@
   .sayblock .hint { color: var(--faint); font-size: 12.5px; margin-top: 8px; }
   .mode label:has(input:checked) { border-color: var(--accent); background: rgba(240, 180, 76, 0.06); }
   /* More settings: shut until asked for. The first thing a new player
-     sees stays "sign in, play". */
+     sees stays "key, play". */
   details.more { margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; }
   details.more summary { cursor: pointer; list-style: none; padding: 11px 14px; font-weight: 600; font-size: 14px; color: var(--dim); display: flex; justify-content: space-between; }
   details.more summary::-webkit-details-marker { display: none; }
@@ -89,7 +89,6 @@
   .acctrow.small { margin-top: 8px; font-size: 13px; }
   .acctrow .grow { flex: 1; }
   .away { color: #e58b6b; margin-top: 8px; }
-  #hwidBlock .acctrow { gap: 12px; }
   .trust { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--faint); font-size: 12.5px; }
 </style>
 </head>
@@ -97,19 +96,11 @@
   <div class="brand"><img src="logo.webp" width="28" height="28" alt=""><span>Dota <b>Translator</b></span></div>
   <h1 id="headline">Ready to <span>play</span></h1>
   <div class="acct" id="acct">
-    <div id="signedOut" hidden>
-      <h3>Sign in to translate</h3>
-      <p class="hint">Your e-mail is all it takes: a 3-day free trial, then &euro;7 for 6 months or &euro;15 for life. No password.</p>
-      <div id="stepEmail" class="keyrow"><input type="text" id="email" placeholder="you@example.com" autocomplete="email" spellcheck="false"><button class="solid" id="sendCode" type="button">Send code</button></div>
-      <div id="stepCode" hidden>
-        <div class="keyrow"><input type="text" id="code" placeholder="6-digit code" inputmode="numeric" maxlength="7" autocomplete="one-time-code"><button class="solid" id="verify" type="button">Sign in</button></div>
-        <p class="hint">We sent it to <b id="sentTo"></b> - or just click the link in that e-mail (on your phone too) and this window signs in by itself. <button class="link" id="otherEmail" type="button">Use another e-mail</button></p>
-      </div>
-    </div>
-    <div id="signedIn" hidden>
-      <div class="acctrow"><span><span class="dot" id="acctDot"></span><b id="acctLine"></b><br><span class="hint" id="acctMail"></span></span><span class="grow"></span><button class="solid" id="buy" type="button" hidden>Buy</button></div>
-      <p class="hint away" id="away" hidden>Your account is set to another PC. To use it here: More settings &gt; HWID reset.</p>
-      <div class="acctrow small"><span class="grow"></span><button class="link" id="logout" type="button">Sign out</button></div>
+    <div id="noKey" hidden>
+      <h3>Add your free Gemini key</h3>
+      <p class="hint">Dota Translator is free and runs on a Gemini API key of your own: free from Google AI Studio, about two minutes to get. <button class="link" id="guide" type="button">How to get one</button></p>
+      <div class="keyrow"><input type="password" id="key" placeholder="Paste your Gemini API key" autocomplete="off" spellcheck="false"><button class="solid" id="checkKey" type="button">Check and save</button></div>
+      <p class="hint">It is tried with one real translation before it is saved, and kept encrypted on this PC.</p>
     </div>
     <p class="hint note" id="acctNow" role="status"></p>
   </div>
@@ -165,11 +156,6 @@
         </div>
       </div>
       <p class="files">There are more settings than these - timing, position, the model - in a file called <b>config.json</b>, for people who like that sort of thing. <button class="link" id="folder" type="button">Open its folder</button></p>
-      <div id="hwidBlock" hidden>
-        <h3>HWID reset</h3>
-        <p class="hint">Your account works on one PC at a time. Moved to a new PC? Reset it here, on the new one. Once a day.</p>
-        <div class="acctrow small"><button id="reset" type="button">Reset HWID to this PC</button><span class="hint" id="resetText"></span></div>
-      </div>
       <p class="hint note" id="moreNow" role="status"></p>
     </div>
   </details>
@@ -181,8 +167,8 @@
     <span class="grow"></span>
     <button id="close" type="button">Close</button>
   </div>
-  <p class="trust">Signed in, chat lines that need translating go to this project's translator (translate.dotatranslator.live) and on to Google's Gemini. Nothing that is said is logged there. Lines already in English never leave your PC.</p>
-  <p class="trust" id="acctFoot" hidden><span class="dot ok"></span><span id="acctFootText"></span> <button class="link" id="logout2" type="button">Sign out</button></p>
+  <p class="trust">Chat lines that need translating go from your PC straight to Google's Gemini with your own key; nothing goes to us. Lines already in English never leave your PC.</p>
+  <p class="trust" id="keyFoot" hidden><span class="dot ok"></span>Gemini key saved &middot; <button class="link" id="changeKey" type="button">Change</button></p>
   <p class="trust" id="version"><span class="dot" id="dot"></span><span id="updateText"></span> <button class="link" id="checkNow" type="button">Check now</button> <button class="link" id="installNow" type="button" hidden>Quit and install</button></p>
 
   <script src="setup.js"></script>

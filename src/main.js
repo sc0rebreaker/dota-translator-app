@@ -7,10 +7,11 @@ import { app, BrowserWindow, screen, ipcMain, globalShortcut, safeStorage, shell
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { loadConfig, saveConfig, onDisk, CONFIG_PATH, DATA_DIR } from './config.js';
+import { loadConfig, saveConfig, onDisk, CONFIG_PATH, DATA_DIR, NO_KEY } from './config.js';
 import { faces } from './heroface.js';
 import { createPatchWatch, SLOW_TEXT } from './patchwatch.js';
 import { uiSettings, settingsPatch, LANGUAGES, THEIRS } from './settings.js';
+import { checkKey, tidyKey } from './keycheck.js';
 import updater from 'electron-updater';
 import { startWatching } from './watcher.js';
 import { explainModelError } from './memwatcher.js';
@@ -18,10 +19,6 @@ import { startWatchingGsi } from './gsiwatcher.js';
 import { loadOffsets, bundledOffsets } from './offsets.js';
 import { createOutgoing, createLanguageTracker, targetLanguage } from './outgoing.js';
 import { createKeySender, sayTranslated, takeLine, sayLine } from './sendchat.js';
-import { createHosted, hashId } from './hosted.js';
-import { createAccount, describeAccount, POLL_MS } from './account.js';
-import { readHwid } from './hwid.js';
-import crypto from 'node:crypto';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // The first start ever (no settings file yet) shows the window once: it says
@@ -205,15 +202,16 @@ async function start() {
   ({ chatLeft: CHAT_LEFT, chatBottom: CHAT_BOTTOM, chatHigh: CHAT_HIGH, textLeft: TEXT_LEFT } = cfg.offsets.layout);
   send('config', { textLeft: TEXT_LEFT });
   if (DEBUG) console.log('offsets', cfg.offsets.source, 'v' + cfg.offsets.version, cfg.offsets.updated);
-  // Ready = signed in for the hosted translator, the only translator.
-  // Not an error to be read off an overlay: a window that asks for it. The
-  // first start ever shows it once either way (and goes on if ready - before
-  // 0.7.0 a first start never started reading until the app was restarted).
-  const ready = hostedOn() && signedIn();
+  // Ready = a key of the player's own (0.8.0: the only translator). Not an
+  // error to be read off an overlay: a window that asks for it, and one line
+  // on the overlay for when the game is in front. The first start ever shows
+  // the window once either way, and goes on if ready.
+  cfg.geminiApiKey = storedKey();
+  const ready = hasKey();
   if (!ready || (firstRun && !firstShown)) {
     firstShown = true;
     openSetup();
-    if (!ready) return;
+    if (!ready) { noKeyNotice(); return; }
   }
   if (cfg.display === 'replace') {
     send('status', { kind: 'error', text: 'Replacing the game chat in place is not built yet - using the chat box.' });
@@ -232,9 +230,6 @@ async function start() {
     },
     onPending: (row) => { spoken.saw(row.text); traceSayInto('line'); itsMe(row); send('pending', withFace(row)); },
     onLayout,
-    // The hosted translator does the asking; nothing else can.
-    translate: (batch) => hosted.translate(batch),
-    onSteamId: (steamid) => { playerId = hashId('steam', steamid); },
     // Who the player is, from the feed: replaces whatever an earlier game taught.
     onSelf: (self) => { me = self && self.name ? { name: self.name, slot: self.slot, hero: self.hero } : null; },
     // GSI mode only: where the game's window is. The dark box is then placed
@@ -262,7 +257,6 @@ async function start() {
       // Enter is held only while Dota is in front, never over another program.
       if (!on && enterHeld) { globalShortcut.unregister('Enter'); enterHeld = false; }
       inFront = on;
-      heartbeat(on);
       if (!win || win.isDestroyed() || hidden) return;
       if (on) win.showInactive(); else win.hide();
     },
@@ -292,94 +286,24 @@ async function start() {
 // The key exists ONLY while Dota is the window in front. Ctrl+Enter is
 // "send" in half the programs on a PC, and a global shortcut swallows the
 // key from whatever has the keyboard.
-// ---- THE HOSTED TRANSLATOR (src/hosted.js, server/) --------------------
-// The translating goes through it whenever there is an address (the user,
-// 2026-09-22: only through the server). Since 0.7.0 it is the ONLY
-// translator: there is no key of the player's own any more.
-const hostedOn = () => /^(https:\/\/[^\s]+|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/\S*)?)$/.test(String(cfg.hostedUrl || ''));
-let playerId = '';
-function installHash() {
-  if (!/^[a-f0-9]{32}$/.test(String(cfg.installId || ''))) {
-    cfg.installId = crypto.randomBytes(16).toString('hex');
-    try { saveConfig({ installId: cfg.installId }); } catch { /* a new one next time */ }
-  }
-  return hashId('install', cfg.installId);
+// ---- THE KEY (0.8.0) -----------------------------------------------------
+// Every translation is one call to Google's Gemini with the player's OWN
+// key, straight from this PC. Nothing goes anywhere else. The key the window
+// saves is encrypted by Windows for this user (safeStorage = DPAPI); a plain
+// geminiApiKey in config.json, or GEMINI_API_KEY, still works and wins.
+function storedKey() {
+  if (cfg.geminiApiKeyPlain) return cfg.geminiApiKeyPlain;
+  if (!cfg.geminiApiKeyEnc || !safeStorage.isEncryptionAvailable()) return '';
+  try { return safeStorage.decryptString(Buffer.from(cfg.geminiApiKeyEnc, 'base64')); } catch { return ''; }
 }
-const hosted = createHosted({ url: () => cfg.hostedUrl, id: () => playerId || installHash(), kind: () => (playerId ? 'steam' : 'install'), version: app.getVersion(), token: () => session.get(), hwid: () => hwid, onRefused: (code) => { if (['login', 'trial_over', 'hwid'].includes(code)) refreshAccount(); } });
-
-// ---- THE ACCOUNT (0.7.0; src/account.js) -------------------------------
-// The hosted translator needs a signed-in account: an e-mail, a code or the
-// link in it, a 3-day trial that belongs to this PC, then paid access. The
-// session is kept encrypted by Windows for this user (safeStorage), as the old
-// key was. There is no other way to translate: no key of the player's own.
-let hwid = '';
-let sessionCache = null;
-const session = {
-  get() {
-    if (sessionCache !== null) return sessionCache;
-    if (cfg.session) return (sessionCache = cfg.session);
-    if (!cfg.sessionEnc || !safeStorage.isEncryptionAvailable()) return (sessionCache = '');
-    try { return (sessionCache = safeStorage.decryptString(Buffer.from(cfg.sessionEnc, 'base64'))); } catch { return (sessionCache = ''); }
-  },
-  set(t) {
-    const enc = Boolean(t) && safeStorage.isEncryptionAvailable();
-    const patch = !t ? { sessionEnc: '', session: '' } : enc ? { sessionEnc: safeStorage.encryptString(t).toString('base64'), session: '' } : { session: t };
-    try { saveConfig(patch); } catch { /* kept for this run */ }
-    Object.assign(cfg, patch);
-    sessionCache = t || '';
-  },
-};
-const signedIn = () => Boolean(session.get());
-const viaServer = () => hostedOn();
-const account = createAccount({ url: () => cfg.hostedUrl, version: app.getVersion(), hwid: () => hwid, store: session });
-let accountState = null;
-function setAccount(st) {
-  accountState = st && st.state ? st : null;
-  const d = describeAccount(accountState);
-  if (tray) { tray.setToolTip('Dota Translator ' + app.getVersion() + (hostedOn() ? ' - ' + d.text : '')); tray.setContextMenu(trayMenu()); }
-  if (setupWin && !setupWin.isDestroyed()) setupWin.webContents.send('account', accountView());
-}
-const accountView = () => ({ signedIn: signedIn(), hosted: hostedOn(), hwid: Boolean(hwid), status: accountState, line: describeAccount(signedIn() ? accountState : null) });
-let lastRefresh = 0;
-function refreshAccount(force = false) {
-  if (!signedIn()) { setAccount(null); return Promise.resolve(null); }
-  if (!force && Date.now() - lastRefresh < 60000) return Promise.resolve(accountState);
-  lastRefresh = Date.now();
-  return account.me().then((st) => { setAccount(st); return st; }, (err) => { if (err && err.code === 'login') setAccount(null); return accountState; });
-}
-readHwid().then((h) => { hwid = h; refreshAccount(true); });
-setInterval(() => refreshAccount(true), 4 * 3600 * 1000).unref?.();
-// The link in the e-mail: asked about every few seconds, for as long as the code lives.
-let pollTimer = null;
-const stopPoll = () => { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } };
-function pollFor(pending) {
-  stopPoll();
-  const until = Date.now() + 15 * 60 * 1000;
-  const tick = async () => {
-    pollTimer = null;
-    if (Date.now() > until) return;
-    try { const r = await account.poll(pending); if (!r.waiting) { welcome(r); return; } } catch (err) { if (err && err.code === 'code') return; }
-    pollTimer = setTimeout(tick, POLL_MS);
-  };
-  pollTimer = setTimeout(tick, POLL_MS);
-}
-function welcome(st) {
-  stopPoll();
-  lastRefresh = Date.now();
-  setAccount(st);
-  restartWatcher();
-}
-
-// While the game is in front and the hosted translator is in use, tell it
-// once a minute that a player is in a game (players.now on its /health).
-let beat = null;
-function heartbeat(on) {
-  if (beat) { clearInterval(beat); beat = null; }
-  if (!on || !viaServer() || !signedIn()) return;
-  const ping = () => hosted.ping(setAccount).then((versions) => { if (versions) sayIt.learn(versions); });
-  ping();
-  beat = setInterval(ping, 60000);
-  beat.unref?.();
+cfg.geminiApiKeyPlain = cfg.geminiApiKey;
+const hasKey = () => Boolean(cfg.geminiApiKey);
+// With no key, once in half an hour: the one thing the overlay says about it.
+let lastNoKey = 0;
+function noKeyNotice() {
+  if (hasKey() || Date.now() - lastNoKey < 30 * 60000) return;
+  lastNoKey = Date.now();
+  send('status', { kind: 'error', text: NO_KEY });
 }
 
 const spoken = createLanguageTracker({ fallback: THEIRS.includes(cfg.theirLanguage) ? cfg.theirLanguage : 'Russian' });
@@ -399,7 +323,7 @@ traceSayInto('start', true);
 // the settings, English -> what was sent. The player can read and correct it.
 const SAID_PATH = path.join(DATA_DIR, 'said.json');
 const sayIt = createOutgoing({
-  remote: () => (viaServer() ? (text, into) => hosted.say(text, into) : null),
+  apiKey: () => cfg.geminiApiKey, model: () => cfg.model,
   // A file that will not parse (a crash mid-save, a hand edit gone wrong) is
   // kept beside it as said.broken.json and the app starts afresh - it never
   // stops saving for good (a review, 2026-09-23).
@@ -492,7 +416,7 @@ function sayClosing(asked) {
 }
 
 async function sayKey(channel = 'team') {
-  if (!viaServer() || !signedIn()) return;
+  if (!hasKey()) { lastNoKey = 0; noKeyNotice(); return; }
   if (cfg.sayMode !== 'open') { sayClosing(channel); return; }
   if (saying) return;
   saying = true;
@@ -595,8 +519,7 @@ const pretty = (accel) => String(accel || '').replace('Control', 'Ctrl');
 // tray icon after that. The key is TRIED before it is saved - one real
 // translation - so "saved" means "works", and it is stored encrypted by
 // Windows for this user (safeStorage = DPAPI) rather than in plain text.
-// A form anybody can fill in with no account (the user's, made 2026-09-21);
-// it points at GitHub's issues and pull requests for those who prefer them.
+// Feedback goes to the support address, by e-mail.
 const FEEDBACK_URL = 'mailto:support@dotatranslator.live';
 let setupWin = null;
 let tray = null;
@@ -645,8 +568,6 @@ function openSetup() {
     tray.displayBalloon({ iconType: 'custom', icon: balloonIcon(), title: 'Still running in the tray', content: 'Dota Translator keeps working by the clock (behind the ^ arrow). Click its icon for settings, right-click to quit.' });
   });
   setupWin.on('closed', () => { setupWin = null; });
-  // Coming back to the window (from the pay page, say) asks the account again.
-  setupWin.on('focus', () => { if (Date.now() - lastRefresh > 5000) refreshAccount(true); });
 }
 
 // Make the setup window exactly as tall as its page, capped to the screen.
@@ -680,12 +601,11 @@ function makeTray() {
   tray = new Tray(nativeImage.createFromPath(path.join(here, 'tray.png')).resize({ width: 16, height: 16 }));
   tray.setToolTip('Dota Translator ' + app.getVersion());
   tray.setContextMenu(trayMenu());
-  setAccount(accountState);
   tray.on('click', openSetup);
-  // Signed in there is no window at all at startup, and Windows hides a
+  // With a key there is no window at all at startup, and Windows hides a
   // new tray icon behind the ^ arrow: say where the app went. A balloon
   // takes no focus, and Windows holds it back itself over a fullscreen game.
-  if (hostedOn()) {
+  if (hasKey()) {
     tray.displayBalloon({ iconType: 'custom', icon: balloonIcon(), title: 'Dota Translator is running', content: 'It sits here by the clock (behind the ^ arrow) and shows translations above the chat in Dota. Click the icon for settings.' });
     tray.on('balloon-click', openSetup);
   }
@@ -693,14 +613,11 @@ function makeTray() {
 
 function trayMenu() {
   return Menu.buildFromTemplate([
-    { label: 'Settings and account...', click: openSetup },
-    ...(hostedOn() ? [{ label: describeAccount(signedIn() ? accountState : null).text, enabled: false }] : []),
-    ...(hostedOn() && signedIn() && describeAccount(accountState).buy ? [{ label: 'Buy...', click: buy }] : []),
+    { label: 'Settings and key...', click: openSetup },
     { label: 'Hide or show the translations' + (cfg.hideHotkey ? ' (' + pretty(cfg.hideHotkey) + ')' : ''), click: toggleHidden },
     ...(cfg.sayHotkey ? [{ label: cfg.sayHotkey.replace('Control', 'Ctrl') + ' in Dota\'s chat sends it translated', enabled: false }] : []),
     ...(cfg.sayHotkey && cfg.sayAllHotkey ? [{ label: cfg.sayAllHotkey.replace('Control', 'Ctrl') + ' sends it to all chat', enabled: false }] : []),
-    // The way a player says anything back: one big box and an optional
-    // e-mail, no account needed. cfg.feedbackUrl (https only) overrides it.
+    // The way a player says anything back. cfg.feedbackUrl (https or mailto) overrides it.
     { label: 'Send feedback, or report a bad translation...', click: () => shell.openExternal(/^(https|mailto):/.test(String(cfg.feedbackUrl || '')) ? cfg.feedbackUrl : FEEDBACK_URL) },
     { label: 'Version ' + app.getVersion(), enabled: false },
     { type: 'separator' },
@@ -714,33 +631,30 @@ function toggleHidden() {
   if (hidden) win.hide(); else if (inFront) win.showInactive();
 }
 
-ipcMain.handle('setup:state', () => ({ version: app.getVersion(), update: updateState, display: cfg.display, settings: uiSettings(cfg), languages: LANGUAGES }));
-// The account, from the settings window.
-const why = (err) => ({ ok: false, why: String((err && err.message) || err), code: err && err.code, data: err && err.data });
-// After Buy the account is asked every 30 s for 30 minutes, so "Paid until"
-// shows up by itself once the payment confirms.
-let buyWatch = null;
-async function buy() {
-  try {
-    await shell.openExternal(await account.payUrl());
-    clearInterval(buyWatch);
-    const stop = Date.now() + 30 * 60000, was = accountState && accountState.state;
-    buyWatch = setInterval(async () => { const st = await refreshAccount(true); if (Date.now() > stop || (st && st.state !== was && st.state !== 'trial' && st.state !== 'expired')) clearInterval(buyWatch); }, 30000);
-    return { ok: true };
-  } catch (err) { return why(err); }
-}
-ipcMain.handle('account:state', () => { refreshAccount(); return accountView(); });
-ipcMain.handle('account:start', async (_e, email) => {
-  if (!hwid) return { ok: false, why: 'This PC could not be identified (Windows would not say its machine id).' };
-  try { const r = await account.start(email); pollFor(r.pending); return { ok: true }; } catch (err) { return why(err); }
+ipcMain.handle('setup:state', () => ({ version: app.getVersion(), update: updateState, hasKey: hasKey(), display: cfg.display, settings: uiSettings(cfg), languages: LANGUAGES }));
+// The key, from the settings window. It is TRIED with one real translation
+// before it is saved (src/keycheck.js): saved means works. The key itself is
+// never handed back to the page - only whether there is one.
+ipcMain.handle('setup:guide', () => {
+  // The live page, not a copy in the app: a file:// address looks wrong in a
+  // browser, and a key is no use offline anyway.
+  shell.openExternal('https://dotatranslator.live/key.html');
 });
-ipcMain.handle('account:verify', async (_e, email, code) => {
-  try { const st = await account.verify(email, code); welcome(st); return { ok: true, ...accountView() }; } catch (err) { return why(err); }
+ipcMain.handle('setup:key', async (_e, typed) => {
+  const key = tidyKey(typed);
+  if (!key) return { ok: false, why: 'Paste your Gemini API key first.' };
+  const r = await checkKey(key, { model: cfg.model });
+  if (!r.ok) return { ok: false, why: r.why };
+  const canEncrypt = safeStorage.isEncryptionAvailable();
+  const patch = canEncrypt ? { geminiApiKeyEnc: safeStorage.encryptString(r.key).toString('base64'), geminiApiKey: '' } : { geminiApiKey: r.key };
+  saveConfig(patch);
+  Object.assign(cfg, patch);
+  cfg.geminiApiKeyPlain = canEncrypt ? '' : r.key;
+  cfg.geminiApiKey = r.key;
+  if (tray) tray.setContextMenu(trayMenu());
+  restartWatcher();
+  return { ok: true, hasKey: true, sample: r.sample, en: r.en };
 });
-ipcMain.handle('account:cancel', () => { stopPoll(); return true; });
-ipcMain.handle('account:reset', async () => { try { const st = await account.resetHwid(); setAccount(st); restartWatcher(); return { ok: true, ...accountView() }; } catch (err) { return why(err); } });
-ipcMain.handle('account:buy', buy);
-ipcMain.handle('account:logout', async () => { await account.logout(); setAccount(null); if (watcher) { watcher.stop(); watcher = null; } return accountView(); });
 
 ipcMain.handle('setup:folder', () => {
   // The file may not exist yet on a fresh install: make it, so that there
