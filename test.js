@@ -1110,10 +1110,11 @@ ok('the landing page keeps the promises the project made about how it talks', ()
   assert.match(dl, /never writes to it/);
   // The safety block keeps the fingerprint and VirusTotal, drops "built in
   // public" and the attestation (no longer possible from a private repo), and
-  // says what changed. The download is the PUBLIC releases repository.
+  // says the releases are public and scanned - not the history of the source
+  // (the owner, 2026-10-07). The download is the PUBLIC releases repository.
   assert.match(dl, /SHA-256/); assert.match(dl, /VirusTotal/);
-  assert.doesNotMatch(dl, /Built in public|attestation|gh attestation/i);
-  assert.match(dl, /What changed in 0\.7/);
+  assert.doesNotMatch(dl, /Built in public|attestation|gh attestation|What changed in 0\.7|no longer public/i);
+  assert.match(dl, /Every release is public, and every installer is scanned/);
   assert.match(dl, /dota-translator-releases\/releases\/latest\/download\/Dota-Translator-Setup\.exe/);
   assert.doesNotMatch(dl, /virus[- ]free|100% safe|guaranteed/i);
   assert.ok(fs.existsSync('SECURITY.md'));
