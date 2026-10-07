@@ -2,6 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { listingPriceCents, openingCostCents, totalOpeningCost } from './pricing.ts';
 
+test('Trove of Terror uses the confirmed 4.39 EUR and 4.99 USD purchase prices', () => {
+  assert.equal(listingPriceCents(34454, 'EUR'), 439);
+  assert.equal(listingPriceCents(34454, 'USD'), 499);
+  assert.equal(openingCostCents(34454, 50, 'EUR'), 21950);
+  assert.equal(openingCostCents(34454, 50, 'USD'), 24950);
+});
+
 test('opening costs use each EUR price and the photographed USD price', () => {
   assert.equal(openingCostCents(12604, 3, 'EUR'), 657);
   assert.equal(openingCostCents(32609, 3, 'EUR'), 795);

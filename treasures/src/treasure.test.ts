@@ -7,6 +7,28 @@ import { apply, BONUS, chance, count, draw, EMPTY_STATE, ORDINARY, remaining, re
 import { ELIMINATION_DELAY_MS, eliminationOrder, eliminationStepMs, revealTime,
   REVEAL_DELAY_MS, SPIN_MUSIC_DURATION_MS, SPIN_UP_MS, winners, revealRewards } from './spin.ts';
 
+test('Trove of Terror has the installed rewards and independent 50-opening Arcana guarantees', t => {
+  const treasure = TREASURES.find(item => item.id === 34454)!;
+  assert.equal(treasure.name, 'Trove of Terror');
+  assert.equal(treasure.ordinary.length, 12);
+  assert.deepEqual(treasure.bonuses.map(item => item.id), [34587, 34581, 33394, 34595, 34486]);
+  assert.deepEqual(treasure.milestones?.map(item => [item.id, item.at]), [[34576, 12], [34488, 40], [37159, 40]]);
+  assert.ok(chance(3, 48, treasure.bonuses) < 1);
+  assert.equal(chance(3, 49, treasure.bonuses), 1);
+  assert.equal(chance(4, 49, treasure.bonuses), 1);
+  const receivedDrow = apply({ ...EMPTY_STATE(treasure), misses: [0, 0, 0, 49, 49] },
+    { treasure: treasure.id, ordinary: treasure.ordinary[0].id, bonuses: 1 << 3, time: 1 }, treasure);
+  assert.equal(receivedDrow.misses[3], 0);
+  assert.equal(chance(3, receivedDrow.misses[3], treasure.bonuses), .00001);
+  assert.equal(chance(4, receivedDrow.misses[4], treasure.bonuses), 1);
+  t.mock.method(crypto, 'getRandomValues', (words: Uint32Array) => {
+    words.fill(words.length === 1 ? 0 : 0xffffffff);
+    return words;
+  });
+  const entry = draw({ ...EMPTY_STATE(treasure), misses: [0, 0, 0, 49, 49] }, 1, treasure);
+  assert.equal(entry.bonuses, (1 << 3) | (1 << 4));
+});
+
 test('ordinary rewards do not repeat until all seven are drawn', () => {
   let state = EMPTY_STATE();
   const history: Opening[] = [];
@@ -111,18 +133,18 @@ for (const treasure of TREASURES) {
     });
     let state = EMPTY_STATE(treasure);
     const history: Opening[] = [];
-    const limit = Math.max(0, ...escalating.map(b => b.scale)) + 1;
+    const limit = Math.max(0, ...escalating.map(b => b.guaranteedAt ?? b.scale + 1));
     for (let opening = 1; opening <= limit; opening++) {
       const entry = draw(state, opening, treasure);
       history.push(entry);
       state = apply(state, entry, treasure);
       treasure.bonuses.forEach((bonus, i) => {
         if (bonus.curve === 'fixed') return;
-        if (opening === bonus.scale + 1) assert.ok(entry.bonuses & (1 << i));
+        if (opening === (bonus.guaranteedAt ?? bonus.scale + 1)) assert.ok(entry.bonuses & (1 << i));
       });
     }
     escalating.forEach(bonus => {
-      assert.equal(rewardStats(history, bonus.id, treasure).firstOpening, bonus.scale + 1);
+      assert.equal(rewardStats(history, bonus.id, treasure).firstOpening, bonus.guaranteedAt ?? bonus.scale + 1);
       if (bonus.rarity === 'Rare') assert.ok(rewardStats(history.slice(0, 49), bonus.id, treasure).copies > 0);
     });
   });
@@ -192,7 +214,7 @@ test("Dragon's Hoard ends with Ancient Dragon King, without the hidden Dragon's 
 });
 
 test("treasure gallery is ordered by full release date, newest first", () => {
-  assert.equal(TREASURES[0].name, "Treasure of the Crimson Witness 2026");
+  assert.equal(TREASURES[0].name, 'Trove of Terror');
   for (let i = 1; i < TREASURES.length; i++) assert.ok(TREASURES[i - 1].releaseDate! >= TREASURES[i].releaseDate!);
 });
 

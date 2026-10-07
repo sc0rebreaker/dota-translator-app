@@ -4659,5 +4659,215 @@
     ],
     "animation": "portrait",
     "kind": "prop"
+  },
+  "33691": {
+    "hero": "Tiny",
+    "kind": "hero",
+    "animation": "tiny_04_tree_loadout_idle",
+    "models": [
+      "/treasures/assets/trove-of-terror/models/items/tiny/primordial_totem_guardian_large/primordial_totem_guardian_large.glb",
+      "/treasures/assets/trove-of-terror/models/items/tiny/primordial_totem_guardian_tree/primordial_totem_guardian_tree.glb"
+    ]
+  },
+  "31472": {
+    "hero": "Marci",
+    "kind": "hero",
+    "animation": "marci_portrait",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/marci/marci_base.glb",
+      "/treasures/assets/trove-of-terror/models/items/marci/boltheart_brawler_head/boltheart_brawler_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/marci/boltheart_brawler_back/boltheart_brawler_back.glb",
+      "/treasures/assets/trove-of-terror/models/items/marci/boltheart_brawler_armor/boltheart_brawler_armor.glb",
+      "/treasures/assets/trove-of-terror/models/items/marci/boltheart_brawler_shoulder/boltheart_brawler_shoulder.glb"
+    ]
+  },
+  "34602": {
+    "hero": "Treant Protector",
+    "kind": "hero",
+    "animation": "idle",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/treant_protector/treant_protector.glb",
+      "/treasures/assets/trove-of-terror/models/items/treant/gruesome_growth/treant_gruesome_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/treant/gruesome_growth/treant_gruesome_shoulder.glb",
+      "/treasures/assets/trove-of-terror/models/items/treant/gruesome_growth/treant_gruesome_legs.glb",
+      "/treasures/assets/trove-of-terror/models/items/treant/gruesome_growth/treant_gruesome_arms.glb"
+    ]
+  },
+  "31415": {
+    "hero": "Terrorblade",
+    "kind": "hero",
+    "animation": "portrait",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/terrorblade/terrorblade.glb",
+      "/treasures/assets/trove-of-terror/models/items/terrorblade/dreadhunt_armor/dreadhunt_armor.glb",
+      "/treasures/assets/trove-of-terror/models/items/terrorblade/dreadhunt_back/dreadhunt_back.glb",
+      "/treasures/assets/trove-of-terror/models/items/terrorblade/dreadhunt_head/dreadhunt_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/terrorblade/dreadhunt_weapon/dreadhunt_weapon.glb"
+    ]
+  },
+  "34447": {
+    "hero": "Oracle",
+    "kind": "hero",
+    "animation": "portrait",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/oracle/oracle.glb",
+      "/treasures/assets/trove-of-terror/models/items/oracle/oracle_monster/oracle_monster_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/oracle/oracle_monster/oracle_monster_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/oracle/oracle_monster/oracle_monster_back.glb",
+      "/treasures/assets/trove-of-terror/models/items/oracle/oracle_monster/oracle_monster_armor.glb"
+    ]
+  },
+  "33304": {
+    "hero": "Primal Beast",
+    "kind": "hero",
+    "animation": "pb_idle",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/primal_beast/primal_beast_base.glb",
+      "/treasures/assets/trove-of-terror/models/items/primal_beast/primal_cheast/primal_cheast_legs.glb",
+      "/treasures/assets/trove-of-terror/models/items/primal_beast/primal_cheast/primal_cheast_back.glb",
+      "/treasures/assets/trove-of-terror/models/items/primal_beast/primal_cheast/primal_cheast_arms.glb",
+      "/treasures/assets/trove-of-terror/models/items/primal_beast/primal_cheast/primal_cheast_head.glb"
+    ]
+  },
+  "34500": {
+    "hero": "Ancient Apparition",
+    "kind": "hero",
+    "animation": "loadout_idle",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/ancient_apparition/ancient_apparition.glb",
+      "/treasures/assets/trove-of-terror/models/items/ancient_apparition/aa_monster/aa_monster_tail.glb",
+      "/treasures/assets/trove-of-terror/models/items/ancient_apparition/aa_monster/aa_monster_shoulders.glb",
+      "/treasures/assets/trove-of-terror/models/items/ancient_apparition/aa_monster/aa_monster_arms.glb",
+      "/treasures/assets/trove-of-terror/models/items/ancient_apparition/aa_monster/aa_monster_head.glb"
+    ]
+  },
+  "34523": {
+    "hero": "Broodmother",
+    "kind": "hero",
+    "animation": "broodmother_portrait",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/broodmother/broodmother.glb",
+      "/treasures/assets/trove-of-terror/models/items/broodmother/brood_monster/brood_monster_legs.glb",
+      "/treasures/assets/trove-of-terror/models/items/broodmother/brood_monster/brood_monster_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/broodmother/brood_monster/brood_monster_back.glb",
+      "/treasures/assets/trove-of-terror/models/items/broodmother/brood_monster/brood_monster_misc.glb"
+    ]
+  },
+  "34610": {
+    "hero": "Anti-Mage",
+    "kind": "hero",
+    "animation": "portrait",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/antimage_female/antimage_female.glb",
+      "/treasures/assets/trove-of-terror/models/items/antimage_female/balisong_huntress/am_balisong_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/antimage_female/balisong_huntress/am_balisong_offhand_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/antimage_female/balisong_huntress/am_balisong_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/antimage_female/balisong_huntress/am_balisong_armor.glb"
+    ]
+  },
+  "32713": {
+    "hero": "Undying",
+    "kind": "hero",
+    "animation": "undying_portrait",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/undying/undying.glb",
+      "/treasures/assets/trove-of-terror/models/items/undying/direstones_corruption_arms/direstones_corruption_arms.glb",
+      "/treasures/assets/trove-of-terror/models/items/undying/direstones_corruption_armor/direstones_corruption_armor.glb",
+      "/treasures/assets/trove-of-terror/models/items/undying/direstones_corruption_head/direstones_corruption_head.glb"
+    ]
+  },
+  "33595": {
+    "hero": "Pudge",
+    "kind": "hero",
+    "animation": "pudge_ti7_immortal_harpoon_loadout_rare",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/pudge/pudge.glb",
+      "/treasures/assets/trove-of-terror/models/items/pudge/horrorfest_butcher/horrorfest_butcher_arm.glb",
+      "/treasures/assets/trove-of-terror/models/items/pudge/horrorfest_butcher/horrorfest_butcher_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/pudge/horrorfest_butcher/horrorfest_butcher_shoulder.glb",
+      "/treasures/assets/trove-of-terror/models/items/pudge/horrorfest_butcher/horrorfest_butcher_offhand.glb",
+      "/treasures/assets/trove-of-terror/models/items/pudge/horrorfest_butcher/horrorfest_butcher_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/pudge/horrorfest_butcher/horrorfest_butcher_back.glb",
+      "/treasures/assets/trove-of-terror/models/items/pudge/horrorfest_butcher/horrorfest_butcher_belt.glb"
+    ]
+  },
+  "34519": {
+    "hero": "Death Prophet",
+    "kind": "hero",
+    "animation": "loadout_idle",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/death_prophet/death_prophet.glb",
+      "/treasures/assets/trove-of-terror/models/items/death_prophet/dp_monster/dp_monster_legs.glb",
+      "/treasures/assets/trove-of-terror/models/items/death_prophet/dp_monster/dp_monster_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/death_prophet/dp_monster/dp_monster_belt.glb",
+      "/treasures/assets/trove-of-terror/models/items/death_prophet/dp_monster/dp_monster_armor.glb"
+    ]
+  },
+  "34587": {
+    "hero": "Shadow Shaman",
+    "kind": "hero",
+    "animation": "loadout_rare",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/shadowshaman/shadowshaman.glb",
+      "/treasures/assets/trove-of-terror/models/items/shadowshaman/ss_monster/ss_monster_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/shadowshaman/ss_monster/ss_monster_offhand_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/shadowshaman/ss_monster/ss_monster_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/shadowshaman/ss_monster/ss_monster_belt.glb",
+      "/treasures/assets/trove-of-terror/models/items/shadowshaman/ss_monster/ss_monster_arms.glb",
+      "/treasures/assets/trove-of-terror/models/heroes/shadowshaman/head.glb"
+    ]
+  },
+  "34581": {
+    "hero": "Nyx Assassin",
+    "kind": "hero",
+    "animation": "portrait",
+    "models": [
+      "/treasures/assets/trove-of-terror/models/items/nerubian_assassin/nyx_monster/nyx_monster_base.glb",
+      "/treasures/assets/trove-of-terror/models/items/nerubian_assassin/nyx_monster/nyx_monster_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/nerubian_assassin/nyx_monster/nyx_monster_misc.glb",
+      "/treasures/assets/trove-of-terror/models/items/nerubian_assassin/nyx_monster/nyx_monster_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/nerubian_assassin/nyx_monster/nyx_monster_back.glb"
+    ]
+  },
+  "33394": {
+    "hero": "Legion Commander",
+    "kind": "hero",
+    "animation": "legion_commander_fallen_loadout_idle",
+    "models": [
+      "/treasures/assets/rigged/models/heroes/legion_commander/legion_commander.glb",
+      "/treasures/assets/trove-of-terror/models/items/legion_commander/dragons_soul/dragons_soul_arms.glb",
+      "/treasures/assets/trove-of-terror/models/items/legion_commander/dragons_soul/dragons_soul_back.glb",
+      "/treasures/assets/trove-of-terror/models/items/legion_commander/dragons_soul/dragons_soul_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/legion_commander/dragons_soul/dragons_soul_legs.glb",
+      "/treasures/assets/trove-of-terror/models/items/legion_commander/dragons_soul/dragons_soul_shoulders.glb",
+      "/treasures/assets/trove-of-terror/models/items/legion_commander/dragons_soul/dragons_soul_weapon.glb"
+    ]
+  },
+  "34595": {
+    "hero": "Drow Ranger",
+    "kind": "hero",
+    "animation": "@drow_arc_arcana_gesture_idle",
+    "models": [
+      "/treasures/assets/trove-of-terror/models/items/drow/drow_arcana/drow_arcana.glb",
+      "/treasures/assets/trove-of-terror/models/items/drow/drow_monster_arcana/drow_monster_arcana_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/drow/drow_monster_arcana/drow_monster_arcana_shoulder.glb",
+      "/treasures/assets/trove-of-terror/models/items/drow/drow_monster_arcana/drow_monster_arcana_quiver.glb",
+      "/treasures/assets/trove-of-terror/models/items/drow/drow_monster_arcana/drow_monster_arcana_legs.glb",
+      "/treasures/assets/trove-of-terror/models/items/drow/drow_monster_arcana/drow_monster_arcana_head.glb",
+      "/treasures/assets/trove-of-terror/models/items/drow/drow_monster_arcana/drow_monster_arcana_back.glb",
+      "/treasures/assets/trove-of-terror/models/items/drow/drow_monster_arcana/drow_monster_arcana_arms.glb"
+    ]
+  },
+  "34486": {
+    "hero": "Tidehunter",
+    "kind": "hero",
+    "animation": "tide_arc_loadout_rare",
+    "models": [
+      "/treasures/assets/trove-of-terror/models/items/tidehunter/tidehunter_arcana/tidehunter_arcana.glb",
+      "/treasures/assets/trove-of-terror/models/items/tidehunter/tidehunter_arcana/tidehunter_arcana_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/items/tidehunter/tidehunter_arcana/tidehunter_arcana_belt.glb",
+      "/treasures/assets/trove-of-terror/models/items/tidehunter/tidehunter_arcana/tidehunter_arcana_offhand_weapon.glb",
+      "/treasures/assets/trove-of-terror/models/heroes/tidehunter/tidehunter_bracer_refit.glb"
+    ]
   }
 }

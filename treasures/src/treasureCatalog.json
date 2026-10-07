@@ -5997,5 +5997,331 @@
       }
     ],
     "bonuses": []
+  },
+  {
+    "id": 34454,
+    "name": "Trove of Terror",
+    "year": "2026",
+    "releaseDate": "2026-10-07",
+    "kind": "IMMORTAL TREASURE",
+    "icon": "econ/tools/monster_2026_treasure",
+    "ordinary": [
+      {
+        "id": 33691,
+        "name": "Stoneback Sovereign",
+        "hero": "Tiny",
+        "heroCode": "tiny",
+        "previewKind": "hero",
+        "image": "econ/sets/dota_item_primordial_totem_guardian",
+        "pieces": [
+          "Stoneback Sovereign - Tree",
+          "Stoneback Sovereign - Tiny",
+          "Stoneback Sovereign - Small",
+          "Stoneback Sovereign - Medium",
+          "Stoneback Sovereign - Large"
+        ]
+      },
+      {
+        "id": 31472,
+        "name": "Patchwork Protector",
+        "hero": "Marci",
+        "heroCode": "marci",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_Boltheart_Brawler",
+        "pieces": [
+          "Patchwork Protector Courier",
+          "Patchwork Protector - Head",
+          "Patchwork Protector - Back",
+          "Patchwork Protector - Armor",
+          "Patchwork Protector- Shoulder",
+          "Taunt: Monster Masher"
+        ]
+      },
+      {
+        "id": 34602,
+        "name": "Creeping Calabash",
+        "hero": "Treant Protector",
+        "heroCode": "treant",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_Treant_Protector__Gruesome_Growth",
+        "pieces": [
+          "Creeping Calabash - Head",
+          "Creeping Calabash - Shoulder",
+          "Creeping Calabash - Legs",
+          "Creeping Calabash - Arms"
+        ]
+      },
+      {
+        "id": 31415,
+        "name": "Rictus Ripper",
+        "hero": "Terrorblade",
+        "heroCode": "terrorblade",
+        "previewKind": "hero",
+        "image": "econ/sets/dota_item_dreadhunt",
+        "pieces": [
+          "Rictus Ripper - Armor",
+          "Rictus Ripper - Back",
+          "Rictus Ripper - Demon",
+          "Rictus Ripper - Head",
+          "Rictus Ripper - Weapon"
+        ]
+      },
+      {
+        "id": 34447,
+        "name": "Clairvoyant Configuration",
+        "hero": "Oracle",
+        "heroCode": "oracle",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_Oracle_Monster__Bundle",
+        "pieces": [
+          "Clairvoyant Configuration - Weapon",
+          "Clairvoyant Configuration - Head",
+          "Clairvoyant Configuration - Back",
+          "Clairvoyant Configuration - Armor"
+        ]
+      },
+      {
+        "id": 33304,
+        "name": "Slobbering Strongbox",
+        "hero": "Primal Beast",
+        "heroCode": "primal_beast",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_PRIMAL_CHEAST",
+        "pieces": [
+          "Slobbering Strongbox - Legs",
+          "Slobbering Strongbox - Back",
+          "Slobbering Strongbox - Arms",
+          "Slobbering Strongbox - Head",
+          "Slobbering Strong Boxhound",
+          "Slobbering Strongbox - Gold Hoard Ward"
+        ]
+      },
+      {
+        "id": 34500,
+        "name": "Shattered Sanity",
+        "hero": "Ancient Apparition",
+        "heroCode": "ancient_apparition",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_AA_Monster__Bundle",
+        "pieces": [
+          "Shattered Sanity - Tail",
+          "Shattered Sanity - Shoulder",
+          "Shattered Sanity - Arms",
+          "Shattered Sanity - Head"
+        ]
+      },
+      {
+        "id": 34523,
+        "name": "Arachnid Anathema",
+        "hero": "Broodmother",
+        "heroCode": "broodmother",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_Brood_Monster__Bundle",
+        "pieces": [
+          "Arachnid Anathema - Brood Junior",
+          "Arachnid Anathema - Legs",
+          "Arachnid Anathema - Head",
+          "Arachnid Anathema - Back",
+          "Arachnid Anathema - Misc"
+        ]
+      },
+      {
+        "id": 34610,
+        "name": "Daemon Hunter",
+        "hero": "Anti-Mage",
+        "heroCode": "antimage",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_AM_Balisong_Huntress__Bundle",
+        "pieces": [
+          "The Disciple's Path",
+          "Daemon Hunter - Weapon",
+          "Daemon Hunter - Offhand Weapon",
+          "Daemon Hunter - Head",
+          "Daemon Hunter - Armor"
+        ]
+      },
+      {
+        "id": 32713,
+        "name": "Direstone Desecration",
+        "hero": "Undying",
+        "heroCode": "undying",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_Direstones_Corruption",
+        "pieces": [
+          "Direstone Desecration - Tombstone",
+          "Direstone Desecration - Flesh Golem",
+          "Direstone Desecration - Arms",
+          "Direstone Desecration - Armor",
+          "Direstone Desecration - Head"
+        ]
+      },
+      {
+        "id": 33595,
+        "name": "Greasepaint Gutbuster",
+        "hero": "Pudge",
+        "heroCode": "pudge",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_Horrorfest_Butcher__Bundle",
+        "pieces": [
+          "Greasepaint Gutbuster - Arm",
+          "Greasepaint Gutbuster - Weapon",
+          "Greasepaint Gutbuster - Shoulder",
+          "Greasepaint Gutbuster - Offhand",
+          "Greasepaint Gutbuster - Head",
+          "Greasepaint Gutbuster - Back",
+          "Greasepaint Gutbuster - Belt"
+        ]
+      },
+      {
+        "id": 34519,
+        "name": "Silken Sibyl",
+        "hero": "Death Prophet",
+        "heroCode": "death_prophet",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_DP_Monster__Bundle",
+        "pieces": [
+          "Silken Sibyl - Exorcism",
+          "Silken Sibyl - Legs",
+          "Silken Sibyl - Head",
+          "Silken Sibyl - Belt",
+          "Silken Sibyl - Armor"
+        ]
+      }
+    ],
+    "bonuses": [
+      {
+        "id": 34587,
+        "name": "Curse of the Wyrmbender",
+        "hero": "Shadow Shaman",
+        "heroCode": "shadow_shaman",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_SS_Monster__Bundle",
+        "pieces": [
+          "Curse of the Wyrmbender - Ward",
+          "Curse of the Wyrmbender - Weapon",
+          "Curse of the Wyrmbender - Offhand Weapon",
+          "Curse of the Wyrmbender - Head",
+          "Curse of the Wyrmbender - Belt",
+          "Curse of the Wyrmbender - Arms"
+        ],
+        "rarity": "Rare",
+        "curve": "rare",
+        "scale": 45,
+        "floor": 0.0005
+      },
+      {
+        "id": 34581,
+        "name": "Mesmer-Eye",
+        "hero": "Nyx Assassin",
+        "heroCode": "nyx_assassin",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_Nyx_Monster__Bundle",
+        "pieces": [
+          "Mesmer-Eye - Weapon",
+          "Mesmer-Eye - Misc",
+          "Mesmer-Eye - Head",
+          "Mesmer-Eye - Back",
+          "Mesmer-Eye - Base"
+        ],
+        "rarity": "Rare",
+        "curve": "rare",
+        "scale": 45,
+        "floor": 0.0005
+      },
+      {
+        "id": 33394,
+        "name": "Hell's Legion",
+        "hero": "Legion Commander",
+        "heroCode": "legion_commander",
+        "previewKind": "hero",
+        "image": "econ/sets/DOTA_Item_LC_The_Dragons_Soul",
+        "pieces": [
+          "Hell's Legion- Arms",
+          "Hell's Legion - Back",
+          "Hell's Legion - Head",
+          "Hell's Legion - Legs",
+          "Hell's Legion - Shoulders",
+          "Hell's Legion - Weapon"
+        ],
+        "rarity": "Very Rare",
+        "curve": "very_rare",
+        "scale": 105,
+        "floor": 5e-05
+      },
+      {
+        "id": 34595,
+        "name": "Sepulchral Stalker",
+        "hero": "Drow Ranger",
+        "heroCode": "drow_ranger",
+        "previewKind": "hero",
+        "image": "econ/sets/dota_item_drow_monster__bundle",
+        "pieces": [
+          "Sepulchral Stalker - Weapon",
+          "Sepulchral Stalker - Arrowhead Cursor",
+          "Sepulchral Stalker - Shoulder",
+          "Sepulchral Stalker - Misc",
+          "Sepulchral Stalker - Legs",
+          "Sepulchral Stalker - Head",
+          "Sepulchral Stalker - Back",
+          "Sepulchral Stalker - Arms",
+          "Dread Retribution",
+          "Dread Retribution - Bracers",
+          "Dread Retribution - Cape",
+          "Dread Retribution - Leg Armor",
+          "Dread Retribution - Quiver",
+          "Dread Retribution - Shoulder Armor",
+          "Dread Retribution - Headwear",
+          "Dread Retribution - Weapon"
+        ],
+        "rarity": "Ultra Rare",
+        "curve": "ultra_rare",
+        "scale": 305,
+        "floor": 1e-05,
+        "guaranteedAt": 50
+      },
+      {
+        "id": 34486,
+        "name": "Maw of the Megalodon",
+        "hero": "Tidehunter",
+        "heroCode": "tidehunter",
+        "previewKind": "hero",
+        "image": "econ/items/tidehunter/tidehunter_arcana/tidehunter_arcana_bundle",
+        "pieces": [
+          "Taunt: Melon Massacre - The Revenge",
+          "Maw of the Megalodon - Weapon",
+          "Maw of the Megalodon - Belt",
+          "Maw of the Megalodon - Offhand Weapon",
+          "Maw of the Megalodon - Arms",
+          "Maw of the Megalodon - Base",
+          "Maw of the Megalodon - Cursor",
+          "Taunt: Shake His Booty"
+        ],
+        "rarity": "Ultra Rare",
+        "curve": "ultra_rare",
+        "scale": 305,
+        "floor": 1e-05,
+        "guaranteedAt": 50
+      }
+    ],
+    "milestones": [
+      {
+        "id": 34576,
+        "name": "Obscene Eye Ball",
+        "hero": "Tormentor",
+        "at": 12
+      },
+      {
+        "id": 34488,
+        "name": "R'shan the Eternal",
+        "hero": "Roshan",
+        "at": 40
+      },
+      {
+        "id": 37159,
+        "name": "Baby R'shan the Eternal",
+        "hero": "Courier",
+        "at": 40
+      }
+    ]
   }
 ]

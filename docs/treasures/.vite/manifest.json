@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/index-DSmjFpgo.js",
+    "file": "assets/index-DaMqNqMl.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -11,11 +11,11 @@
       "src/HeroPreview.tsx"
     ],
     "css": [
-      "assets/index-DA8QX75s.css"
+      "assets/index-BS7hanKx.css"
     ]
   },
   "src/HeroPreview.tsx": {
-    "file": "assets/HeroPreview-BpVoHniz.js",
+    "file": "assets/HeroPreview--SxueaUT.js",
     "name": "HeroPreview",
     "src": "src/HeroPreview.tsx",
     "isDynamicEntry": true,

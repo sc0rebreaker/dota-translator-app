@@ -477,11 +477,20 @@ function App() {
             <div className="progress-track"><div style={{ width: `${inCycle / treasure.ordinary.length * 100}%` }} /></div>
             <p className="progress-note">{inCycle} of {treasure.ordinary.length} regular rewards received this cycle. Each appears once before the pool resets.</p>
             <div className="section-heading odds-heading"><span>{treasure.bonuses.length ? 'NEXT OPENING ODDS' : 'BONUS REWARDS'}</span></div>
-            {treasure.bonuses.length ? treasure.bonuses.map((item, i) => <button className={`odds-line bonus-${rarityTier(item.rarity)}`} key={item.id} onClick={() => setOddsIndex(i)} aria-haspopup="dialog" aria-label={`Show odds for ${item.name}`}><span>{item.name}<small>{item.rarity} · VIEW ODDS</small></span><b>{odds(chance(i, state.misses[i], treasure.bonuses))}</b></button>)
+            {treasure.bonuses.length ? treasure.bonuses.map((item, i) => <button className={`odds-line bonus-${rarityTier(item.rarity)}`} key={item.id} onClick={() => setOddsIndex(i)} aria-haspopup="dialog" aria-label={`Show odds for ${item.name}`}><span>{item.name}<small>{item.rarity} · VIEW ODDS</small>{item.guaranteedAt && <small className="guarantee-note">Guaranteed within {Math.max(1, item.guaranteedAt - state.misses[i])} more openings</small>}</span><b>{odds(chance(i, state.misses[i], treasure.bonuses))}</b></button>)
               : <p className="progress-note">This treasure has no bonus drops. Each opening awards one standard reward.</p>}
           </div>}
         </aside>
       </div>
+      {treasure.milestones && <section className="treasure-milestones" aria-label="Opening milestone rewards">
+        <div className="section-heading"><span>OPENING MILESTONES</span><b>Guaranteed rewards as you open</b></div>
+        <div className="milestone-grid">{treasure.milestones.map(item => <div className={`milestone-card ${state.opened >= item.at ? 'unlocked' : ''}`} key={item.id}>
+          <img src={image(item.id)} alt="" />
+          <div><small>{item.hero}</small><strong>{item.name}</strong><span>{state.opened >= item.at ? 'UNLOCKED' : `${Math.min(state.opened, item.at)} / ${item.at} OPENINGS`}</span>
+            <progress value={Math.min(state.opened, item.at)} max={item.at} aria-label={`${item.name} progress`} />
+          </div>
+        </div>)}</div>
+      </section>}
       <section className="rewards"><div className="section-heading"><span>TREASURE CONTENTS</span><b>{cyclePool.length} regular rewards remain this cycle</b></div>
         <div className="reward-grid">{allItems.map((item: Item, i) => {
           const ordinaryIndex = treasure.ordinary.findIndex(entry => entry.id === item.id);
@@ -502,6 +511,7 @@ function App() {
           <div><span>{treasure.bonuses[oddsIndex].curve === 'fixed' ? 'FIXED ODDS FOR' : 'ESCALATING ODDS INFORMATION FOR'}</span><strong id="odds-modal-title">{treasure.bonuses[oddsIndex].rarity.toUpperCase()} ITEMS</strong></div>
           <button autoFocus onClick={() => setOddsIndex(null)} aria-label="Close odds table">×</button>
         </header>
+        {treasure.bonuses[oddsIndex].guaranteedAt && <p className="odds-guarantee">Guaranteed by opening {treasure.bonuses[oddsIndex].guaranteedAt}. Each Arcana has its own counter, which resets when you receive it.</p>}
         <div className="odds-table-head"><span>TREASURE OPENING</span><span>TREASURE ODDS</span><span>CHANCE</span></div>
         <div className="odds-table-body" role="table" aria-label={`${treasure.bonuses[oddsIndex].rarity} odds`}>
           {Array.from({ length: treasure.bonuses[oddsIndex].curve === 'fixed' ? 1 : 50 }, (_, row) => {

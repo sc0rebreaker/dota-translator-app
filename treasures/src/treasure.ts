@@ -8,6 +8,7 @@ export type Item = {
   scale?: number;
   floor?: number;
   curve?: string;
+  guaranteedAt?: number;
 };
 export type BonusItem = Item & { rarity: string; scale: number; floor: number };
 export type Treasure = {
@@ -19,6 +20,7 @@ export type Treasure = {
   icon: string;
   ordinary: Item[];
   bonuses: BonusItem[];
+  milestones?: (Item & { at: number })[];
 };
 const generated = generatedCatalog as Treasure[];
 
@@ -62,6 +64,7 @@ export function chance(index: number, misses: number, bonuses: BonusItem[] = BON
   const bonus = bonuses[index];
   if (!bonus || !Number.isSafeInteger(misses) || misses < 0) throw Error('Invalid bonus counter');
   if (bonus.curve === 'fixed') return bonus.floor;
+  if (bonus.guaranteedAt && misses + 1 >= bonus.guaranteedAt) return 1;
   if (misses >= bonus.scale) return 1;
   return Math.min(1, Math.max(0, (Math.sin(misses * Math.PI / bonus.scale - Math.PI / 2) + 1) / 2 + bonus.floor));
 }

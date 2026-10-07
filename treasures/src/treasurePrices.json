@@ -292,5 +292,15 @@
     "EURBasis": "displayed treasure purchase price",
     "USDSource": "User Dota screenshot us-prices-1.png, 2026-10-01",
     "USDChecked": "2026-10-01"
+  },
+  "34454": {
+    "USD": 499,
+    "EUR": 439,
+    "basis": "treasure",
+    "source": "User-confirmed Dota 2 purchase prices, 2026-10-07",
+    "checked": "2026-10-07",
+    "USDSource": "User-confirmed Dota 2 purchase price",
+    "USDChecked": "2026-10-07",
+    "EURBasis": "displayed treasure purchase price"
   }
 }
