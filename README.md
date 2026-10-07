@@ -263,7 +263,7 @@ Worth knowing if you are reviewing the code:
 - **Restart Dota once** after the app's first start. The game reads the
   feed's config only at launch.
 - If the overlay says it could not find Dota, the config file was not
-  written: [open an issue](mailto:support@dotatranslator.live)
+  written: [write to support@dotatranslator.live](mailto:support@dotatranslator.live)
   with where your Steam library is.
 - **Steam running as administrator** stops the `Ctrl+Enter` key (Windows
   does not deliver a normal program's keys to an elevated one). Start Steam
