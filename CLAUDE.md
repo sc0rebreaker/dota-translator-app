@@ -9,6 +9,10 @@ use English. That is the whole point of it.
 
 ---
 
+## THE WEBSITE HAS ONE SOURCE: docs/ IN THIS REPO (2026-10-08)
+
+dotatranslator.live (Treasure Simulator included) is published by force-pushing docs/ of THIS repo (sc0rebreaker/dota-translator-app) to gh-pages of sc0rebreaker/dota-translator-releases, by the website workflow on a v* tag or by hand. Each publish REPLACES the whole site. A change made anywhere else - the old private repo sc0rebreaker/dota-translator, or straight onto gh-pages - is erased by the next publish: the Trove of Terror treasure was lost that way on 2026-10-07/08 and restored from the old repo's commit 690a2e0. Treasure Simulator source is treasures/ here; its build goes to docs/treasures/.
+
 ## >>> 0.8.0: FREE AGAIN, OWN KEY REQUIRED (the owner, 2026-10-08) <<<
 
 READ THIS FIRST: the ACCOUNTS section below (0.7.0: sign-in, trial, HWID,
