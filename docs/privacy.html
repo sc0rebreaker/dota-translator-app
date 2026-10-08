@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy - Dota Translator</title>
-<meta name="description" content="What Dota Translator keeps about you, why, for how long, and how to have it deleted.">
+<meta name="description" content="Dota Translator keeps nothing about players: no sign-up, no server of ours. What goes to Google, and what stays on your PC.">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/webp" href="logo-192.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;1,6..72,500&display=swap" rel="stylesheet">
 <style>
-  /* The privacy page (0.7.0, accounts and payments). Every claim on it is
-     what the server and the app actually do - check it against the server's
-     CLAUDE.md before changing either. Linked from the footers only. */
+  /* The privacy page (0.8.0: no accounts, own key). Every claim on it is
+     what the app actually does - check it against src/ before changing
+     either. Linked from the footers only. */
   :root {
     --bg: #0a0d10; --panel: #11161b;
     --line: rgba(200, 215, 230, 0.10); --line-strong: rgba(200, 215, 230, 0.22);
@@ -58,56 +58,38 @@
 
 <main><div class="wrap">
   <h1>Privacy</h1>
-  <p class="lead">What Dota Translator keeps about you, why, for how long, and how to have it deleted. Short, because little is kept.</p>
-  <p class="updated">Last updated: 7 October 2026</p>
+  <p class="lead">Short, because we keep nothing about players. Dota Translator has no sign-up and no server of ours: the app talks to Google with your own key, and that is all.</p>
+  <p class="updated">Last updated: 8 October 2026</p>
 
   <h2>Who is responsible</h2>
-  <p>Dota Translator is run by its developer, an individual in the European Union. For anything on this page - a question, a copy of your data, deleting your account - write to <a href="mailto:support@dotatranslator.live">support@dotatranslator.live</a>.</p>
+  <p>Dota Translator is made by its developer, an individual in the European Union. For anything on this page, write to <a href="mailto:support@dotatranslator.live">support@dotatranslator.live</a>.</p>
 
-  <h2>Your account</h2>
-  <p>To use the translator you sign in with your e-mail address. There is no password: we send a one-time code and a sign-in link. On our server we keep:</p>
-  <table>
-    <tr><th>Your e-mail address</th><td>To send your sign-in codes and to know which account is yours. Never sold, never shared, never used for newsletters.</td></tr>
-    <tr><th>Your PC's ID</th><td>A one-way fingerprint (a hash) of your Windows machine ID - not the ID itself. It ties the free trial to one PC and an account to one PC at a time, so a trial cannot be had again with a new e-mail.</td></tr>
-    <tr><th>Your access</th><td>When your trial started and ends, whether you have paid and until when, and when you last moved your account to another PC.</td></tr>
-    <tr><th>Sign-in codes and sessions</th><td>Stored only as one-way fingerprints, never as the code or token itself. Codes expire after 15 minutes; a session after 90 days without use.</td></tr>
-  </table>
-
-  <h2>Payments</h2>
-  <p>We never see your card. A card payment is made on <b>Swapped.com</b>'s own form, which sells USDC (a dollar-pegged coin) and sends it to our wallet on the Polygon network; Swapped handles your card and any identity check under its own privacy policy. If you send USDC yourself, it comes straight from your wallet.</p>
-  <p>For each order we keep the product, the price, the amount expected, its status, and the transaction it was paid by. A transaction on a public blockchain shows which wallet sent it - that is how blockchains work, and anybody can look it up.</p>
+  <h2>What we keep about you</h2>
+  <p><b>Nothing.</b> There is no sign-up, no e-mail address, no PC ID and no payment. The app does not send us your chat, your settings, your key or any usage counts, because it does not talk to us at all.</p>
 
   <h2>Your chat</h2>
   <ul>
     <li><b>Only the lines that need translating leave your PC.</b> Lines already in English never do.</li>
-    <li>They go to our translator (translate.dotatranslator.live) and on to <b>Google's Gemini</b>, which does the translating under Google's terms for its paid API. The English comes back the same way.</li>
-    <li><b>Nothing that is said is written to disk on our server.</b> Recent lines and their translations are held only while the server runs, so a repeated line ("gg", "go mid") is answered at once; they are gone whenever the server restarts.</li>
-    <li>What you send with Ctrl+Enter is kept on <b>your own PC</b> (a file called said.json), so the same words are said the same way next time. You can read or delete it.</li>
+    <li>They go straight from your PC to <b>Google's Gemini</b>, under <b>your own Gemini key</b>, and the English comes straight back. Google handles them under its own terms for the Gemini API. On the free tier those terms let Google use what is sent to improve its products; a key on a project with billing set up is under Google's paid terms, which do not. That choice, and that relationship, are yours and Google's.</li>
+    <li>Nothing else goes with them: no name, no match, no Steam ID.</li>
+  </ul>
+
+  <h2>What stays on your PC</h2>
+  <ul>
+    <li><b>Your settings</b> (config.json).</li>
+    <li><b>Your Gemini key</b>, encrypted by Windows for your user. It is sent to Google and nobody else.</li>
+    <li><b>said.json</b>: what you sent with Ctrl+Enter and how it was translated, so the same words are said the same way next time. You can read, correct or delete it.</li>
   </ul>
 
   <h2>What the app does on your PC</h2>
-  <p>It reads the chat from the feed Valve built into the game (Game State Integration), compares two small spots of the screen with hero portraits to show who spoke, and presses keys when you press Ctrl+Enter. None of that is saved or sent anywhere. The app has no analytics and no tracking.</p>
-
-  <h2>Other things the server sees</h2>
-  <ul>
-    <li><b>Your IP address</b> is used while you are connected, to stop abuse (a limit on requests per address per day). It is not stored in our database and we keep no access logs of the translator.</li>
-    <li><b>Usage counts</b>: how many lines were translated per day and per account, so the daily allowance works and we know what it costs. Counts, not content.</li>
-    <li>Your Steam ID never leaves your PC; the app sends a one-way fingerprint of it at most.</li>
-  </ul>
+  <p>It reads the chat from the feed Valve built into the game (Game State Integration), compares two small spots of the screen with hero portraits to show who spoke, and presses keys when you press Ctrl+Enter. None of that is saved or sent anywhere. Besides Google's Gemini it talks only to GitHub (updates) and, for a hero portrait it cannot find in your own Dota, to Valve's image server. The app has no analytics and no tracking.</p>
 
   <h2>This website</h2>
   <p>The website (not the app) uses <b>Google Analytics</b> to count visits and clicks - which pages are read, which buttons pressed, roughly which country a visit is from. It sets cookies for that. The site itself is hosted on GitHub Pages and served through Cloudflare, which see your visit as any web host does.</p>
 
-  <h2>How long it is kept</h2>
-  <ul>
-    <li>Your account: until you ask us to delete it.</li>
-    <li>Sign-in codes: 15 minutes. Sessions: 90 days from last use.</li>
-    <li>Orders and payments: as long as accounting law requires us to keep records of sales, even after an account is deleted - without anything you did not need to give us.</li>
-  </ul>
-
   <h2>Your rights</h2>
-  <p>You can ask for a copy of what we keep about you, have it corrected, or have your account deleted - write to <a href="mailto:support@dotatranslator.live">support@dotatranslator.live</a> from the address you signed in with. Deleting your account ends your access, and paid time is not refunded by deleting it. You can also complain to your country's data protection authority.</p>
-  <div class="box">We do not sell your data, do not show ads, and do not use what you say in chat for anything but translating it at that moment.</div>
+  <p>We hold no personal data about players to give, correct or delete. If you write to us by e-mail, your message is kept only as long as the conversation needs. You can also complain to your country's data protection authority.</p>
+  <div class="box">We do not sell data, do not show ads, and never see what you say in chat.</div>
 </div></main>
 
 <footer><div class="wrap">Dota Translator is a fan project. Not affiliated with or endorsed by Valve. Dota 2 is a trademark of Valve Corporation. <a href="/">Home</a></div></footer>

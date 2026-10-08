@@ -225,7 +225,7 @@
       <div class="shot appwin">
         <div class="bar dark"><i></i><i></i><i></i><div class="url">Dota Translator</div></div>
         <div class="appbody">
-          <div class="apptitle">One thing first: <em>your key</em></div>
+          <div class="apptitle">Add your <em>key</em></div>
           <div class="applabel">Your Gemini key</div>
           <div class="appfield here sq"><span>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span><span class="appghost">Show</span></div>
           <div class="appok"><b>It works.</b> Google translated <code>гг вп</code> as <code>gg wp</code>. Saved.</div>
@@ -234,7 +234,7 @@
       </div>
       <figcaption>Drawing of the app's own window. It tries your key with one real translation before saving, so you know at once whether it works - and if not, it says why in plain words.</figcaption>
     </figure>
-    <p>The key is saved on your PC only, encrypted by Windows for your user, and is sent to Google and nobody else. To change it later, click the Dota Translator icon in the system tray, by the clock.</p>
+    <p>The key is saved on your PC only, encrypted by Windows for your user, and is sent to Google and nobody else. To change it later, click the Dota Translator icon in the system tray, by the clock, and press Change beside "Gemini key saved".</p>
     <p>Rather use a file? Put it in <code>config.json</code> as <code>geminiApiKey</code>, or set the environment variable <code>GEMINI_API_KEY</code>, which never touches the disk.</p>
   </section>
 
@@ -249,7 +249,7 @@
     <details><summary>"Your project has been denied access" (403)</summary><p>This has happened with a brand-new project that otherwise looked fine: it would list the models and refuse every request. Create the key in a different project and it works.</p></details>
     <details><summary>"You exceeded your current quota"</summary><p>The free tier allows about 15 requests a minute. Dota Translator counts its own requests and, when chat gets busy, sends several lines in one - so this should only appear if the same key is being used by something else at the same time.</p></details>
     <details><summary>"Google does not recognise this key"</summary><p>Usually a character lost while copying. Copy the key again with the Copy button in AI Studio rather than by selecting it, and paste it again.</p></details>
-    <details><summary>Does Google see my chat?</summary><p>The lines that need translating are sent to Google's Gemini API under your key, and that is all that is sent: no account name, no match, and nothing that was already in English. Google's terms for the free tier apply to what it does with them.</p></details>
+    <details><summary>Does Google see my chat?</summary><p>The lines that need translating are sent to Google's Gemini API under your key, and that is all that is sent: no account name, no match, and nothing that was already in English. Google's terms for the Gemini API apply to what it does with them: on the free tier they let Google use what is sent to improve its products, and a key on a project with billing set up is under its paid terms, which do not. Nothing goes to Dota Translator.</p></details>
   </section>
 
   <div class="end">

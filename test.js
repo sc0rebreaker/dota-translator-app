@@ -1256,11 +1256,24 @@ ok('the landing page keeps the promises the project made about how it talks', ()
   assert.match(text, /three small spots of your screen/);
   assert.match(text, /Valve has not approved it/);
   assert.doesNotMatch(text, /Valve (approved|allows|permits) (it|this)/i);
-  // 0.7.0 (draft, branch `accounts`): paid access and closed source. The page
-  // says the price as it is and no longer calls the app free or source-available.
-  assert.match(text, /3-day free trial, then &euro;7 for 6 months or &euro;15 lifetime/);
-  assert.doesNotMatch(text.replace(/free trial/gi, ''), /\bfree\b/i, 'the landing page still calls the app free');
-  assert.doesNotMatch(text, /source-available|open source|PolyForm/i);
+  // 0.8.0 (the owner, 2026-10-08): free forever again, on the player's own
+  // Gemini key; no accounts, no prices, no server of ours. Never "open source".
+  assert.match(text, /\bFree\b/);
+  assert.match(html, /href="key\.html"/, 'the landing page does not link the key guide');
+  assert.match(text, /Get a free Gemini key/);
+  assert.doesNotMatch(text, /open source/i);
+  for (const page of ['index.html', 'download.html', 'privacy.html', path.join('ru', 'index.html')]) {
+    const words = fs.readFileSync(path.join('docs', page), 'utf8').replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<[^>]+>/g, ' ');
+    assert.doesNotMatch(words.replace(/Steam account/g, ''), /€|&euro;|EUR \d|\btrial\b|sign[- ]in|\bsign in\b|\baccounts?\b|USDC|translate\.dotatranslator\.live|пробн|вход по/i, page + ' still has the paid wording');
+  }
+  const privacy = fs.readFileSync(path.join('docs', 'privacy.html'), 'utf8');
+  assert.match(privacy, /we keep nothing about players/);
+  assert.match(privacy, /support@dotatranslator\.live/);
+  assert.match(privacy, /Google Analytics/);
+  assert.match(fs.readFileSync(path.join('docs', 'download.html'), 'utf8'), /github\.com\/sc0rebreaker\/dota-translator-app/, 'the download page does not link the source');
+  assert.match(fs.readFileSync(path.join('docs', 'download.html'), 'utf8'), /href="key\.html"/);
+  const ru = fs.readFileSync(path.join('docs', 'ru', 'index.html'), 'utf8');
+  assert.match(ru, /Бесплатно/); assert.match(ru, /href="\/key\.html"/);
   // What Valve HAS said. For a day the page and the README said "Valve has
   // never said whether that is allowed" - and in February 2023 Valve banned
   // 40,000 accounts for software that read the client, and wrote that any
@@ -1308,10 +1321,9 @@ ok('the landing page keeps the promises the project made about how it talks', ()
   for (const claim of [/\bis safe\b/i, /\bcompletely safe\b/i, /\bundetectable\b/i, /\bban-?proof\b/i, /\bVAC[- ]safe\b/i]) {
     assert.doesNotMatch(text, claim, 'the landing page claims ' + claim);
   }
-  // No key on the page since v0.5.0 (the hosted translator); the guide stays for an own key.
-  assert.doesNotMatch(html, /Get a free Gemini key|paste the key|paste your key|need a free Gemini key/i, 'the landing page still asks for a key');
-  assert.match(text, /translate\.dotatranslator\.live/);
-  assert.match(text, /Nothing that is said is logged/);
+  // Where chat goes: straight to Google with the player's key, nothing to us.
+  assert.match(text, /straight to Google's Gemini under your own key/);
+  assert.match(text, /Nothing goes to us/);
   const guide = fs.readFileSync(path.join('docs', 'key.html'), 'utf8');
   assert.doesNotMatch(guide, /AIza[0-9A-Za-z_-]{10,}/, 'something shaped like a real Google key is in the guide');
   assert.match(guide, /not a screenshot/);

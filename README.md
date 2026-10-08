@@ -2,9 +2,12 @@
 
 Translates Russian Dota 2 chat into English, live, on a transparent overlay
 above the game - and Spanish (US servers) and Chinese (SEA) the same way,
-with an answer back in their language on Ctrl+Enter. A 3-day free trial,
-then EUR 7 for 6 months or EUR 15 lifetime: download, sign in with your
-e-mail, restart Dota once, play. (DRAFT for 0.7.0, branch `accounts`.)
+with an answer back in their language on Ctrl+Enter. **Free**, and the
+source is public. It runs on **your own Google Gemini API key**, which is
+free from Google AI Studio and takes about two minutes to get
+([step by step](https://dotatranslator.live/key.html)). No accounts, no
+payments, and no server of ours: chat lines go from your PC straight to
+Google with your key.
 
 ```
 [all]  unc status: hello everyone
@@ -50,12 +53,13 @@ What it does do, all of it:
   the app presses select, copy, paste and Enter through Windows, as a macro
   key would ([`src/sendchat.ps1`](src/sendchat.ps1)). `"sayHotkey": ""`
   turns it off.
-- **Sends the chat lines that need translating to this project's own
-  translator** (`translate.dotatranslator.live`), which passes them to
-  Google's Gemini and returns the English. Nothing that is said is logged
-  there; it keeps a short-lived cache of text and translation, with nothing
-  about who said it, and counts how many players used it each day. Lines already in English never leave your PC. There is
-  a fair daily allowance per player that normal play never reaches.
+- **Sends the chat lines that need translating straight to Google's
+  Gemini, with your own key**, and shows the English that comes back.
+  Nothing goes to us. Lines already in English never leave your PC. Google's
+  terms for the Gemini API apply to what it receives: on the free tier they
+  let Google use it to improve its products; a key on a project with
+  billing set up is under the paid terms, which do not. Without a key the
+  app translates nothing.
 
 What nobody can promise you: Valve has not reviewed or approved this app,
 and the Steam Subscriber Agreement does not bless third-party tools in
@@ -116,7 +120,12 @@ which Windows already has.
    Display Mode; either works. Not Exclusive Fullscreen: that owns the screen
    and no overlay can sit on it.
 
-2. **Install it.** [Download `Dota-Translator-Setup.exe`](https://github.com/sc0rebreaker/dota-translator-releases/releases/latest/download/Dota-Translator-Setup.exe)
+2. **Get a free Gemini key.** At
+   [aistudio.google.com/apikey](https://aistudio.google.com/apikey), signed
+   in with any Google account, in a project with no billing: about two
+   minutes, no card. [The guide, with pictures](https://dotatranslator.live/key.html).
+
+3. **Install it.** [Download `Dota-Translator-Setup.exe`](https://github.com/sc0rebreaker/dota-translator-releases/releases/latest/download/Dota-Translator-Setup.exe)
    (always the latest release) and run it. It installs for your user only (no
    administrator needed), adds a shortcut and starts the app. The installer
    is not code-signed, so Windows SmartScreen asks first: *More info*, then
@@ -125,9 +134,13 @@ which Windows already has.
    From source instead: `npm install`, then `npm start`. `npm run dist`
    builds the installer into `dist/`.
 
-3. **Restart Dota once, and play.** The window that opens says so: Dota
-   reads its chat-feed setting only when it starts. The same window is behind
-   the tray icon later, for the settings.
+4. **Paste the key, restart Dota once, and play.** The window that opens
+   asks for the key, tries it with one real translation (*Check and save*)
+   and keeps it encrypted by Windows for your user. Dota reads its chat-feed
+   setting only when it starts, so restart it once. The same window is behind
+   the tray icon later, for the settings and to change the key. A key in
+   `config.json` as `geminiApiKey`, or in the environment variable
+   `GEMINI_API_KEY`, works too.
 
 `-condebug` is **not** needed. That was for the old log reader.
 
@@ -231,10 +244,11 @@ language. Plain `Enter` still sends exactly what you typed.
 
 ## What it costs
 
-Almost nothing. Only lines containing Cyrillic are sent, and lines arriving
-together go in one call, so Dota's own chat wheel ("Pushing mid", already in
-your language) never costs anything at all. A normal game is a handful of
-calls carrying a few dozen short lines - well inside a player's daily allowance.
+Nothing. The app is free, and Google's free tier for the Gemini API covers
+normal play: only lines in a language you have switched on are sent, lines
+arriving together go in one call, and Dota's own chat wheel ("Pushing mid",
+already in your language) never costs a call at all. A normal game is a
+handful of calls carrying a few dozen short lines.
 
 
 ## How it works
@@ -289,10 +303,7 @@ to report: include the original line and what the app showed.
 
 ## Licence
 
-**DRAFT (0.7.0, branch `accounts`) - the owner's decision, not made here.**
-Versions up to 0.6.10 were published under
-[PolyForm Noncommercial 1.0.0](LICENSE.md) and stay so for anybody who has
-them. From 0.7.0 the source is no longer published and the hosted translator
-is paid (3-day trial, then EUR 7 for 6 months or EUR 15 lifetime, no
-subscription). `LICENSE.md` has NOT been changed: what licence, if any, the
-closed versions carry is for the owner to decide.
+The source is published, as before, under
+[PolyForm Noncommercial 1.0.0](LICENSE.md): free for players and anybody
+not selling it; a paid product may not bundle it. That makes it
+source-available, not open source.
