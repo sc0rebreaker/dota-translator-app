@@ -56,9 +56,10 @@ What it does do, all of it:
 - **Sends the chat lines that need translating straight to Google's
   Gemini, with your own key**, and shows the English that comes back.
   Nothing goes to us. Lines already in English never leave your PC. Google's
-  terms for the Gemini API apply to what it receives: on the free tier they
-  let Google use it to improve its products; a key on a project with
-  billing set up is under the paid terms, which do not. Without a key the
+  terms for the Gemini API apply to what it receives: outside the EU,
+  Switzerland and the UK they let Google use it on the free tier to improve
+  its products; inside them, and on any key with billing set up, Google says
+  it does not. Without a key the
   app translates nothing.
 
 What nobody can promise you: Valve has not reviewed or approved this app,
@@ -277,7 +278,7 @@ Worth knowing if you are reviewing the code:
 - **Restart Dota once** after the app's first start. The game reads the
   feed's config only at launch.
 - If the overlay says it could not find Dota, the config file was not
-  written: [write to support@dotatranslator.live](mailto:support@dotatranslator.live)
+  written: [the feedback form](https://forms.gle/4UwGB5drooGT4mUB9)
   with where your Steam library is.
 - **Steam running as administrator** stops the `Ctrl+Enter` key (Windows
   does not deliver a normal program's keys to an elevated one). Start Steam
@@ -296,8 +297,8 @@ reader is fed payloads recorded from real games.
 
 ## Feedback
 
-Tell me what worked and what did not: write to
-[support@dotatranslator.live](mailto:support@dotatranslator.live) - the app's
+Tell me what worked and what did not: the
+[feedback form](https://forms.gle/4UwGB5drooGT4mUB9) - one box, no account needed - and the app's
 tray menu opens it too. A wrong or odd translation is the most useful thing
 to report: include the original line and what the app showed.
 

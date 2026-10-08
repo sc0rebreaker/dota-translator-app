@@ -172,7 +172,7 @@ export const DEFAULTS = {
   // until a line has been seen. The setup window's first choice.
   theirLanguage: 'Russian',
   // Where the tray's "Send feedback" goes (https or mailto). Blank is
-  // support@dotatranslator.live.
+  // the feedback form.
   feedbackUrl: '',
   learn: false,             // log unmatched lines to learn.log
 };

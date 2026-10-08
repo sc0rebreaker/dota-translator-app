@@ -520,7 +520,7 @@ const pretty = (accel) => String(accel || '').replace('Control', 'Ctrl');
 // translation - so "saved" means "works", and it is stored encrypted by
 // Windows for this user (safeStorage = DPAPI) rather than in plain text.
 // Feedback goes to the support address, by e-mail.
-const FEEDBACK_URL = 'mailto:support@dotatranslator.live';
+const FEEDBACK_URL = 'https://forms.gle/4UwGB5drooGT4mUB9';
 let setupWin = null;
 let tray = null;
 // The balloon's picture is OUR icon, said outright: left to Windows it showed

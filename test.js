@@ -1268,7 +1268,9 @@ ok('the landing page keeps the promises the project made about how it talks', ()
   }
   const privacy = fs.readFileSync(path.join('docs', 'privacy.html'), 'utf8');
   assert.match(privacy, /we keep nothing about players/);
-  assert.match(privacy, /support@dotatranslator\.live/);
+  // Contact is the feedback form, not an address (the owner, 2026-10-08).
+  assert.match(privacy, /forms\.gle\/4UwGB5drooGT4mUB9/);
+  for (const p of ['index.html', 'download.html', 'privacy.html', path.join('ru', 'index.html')]) assert.doesNotMatch(fs.readFileSync(path.join('docs', p), 'utf8'), /support@dotatranslator/, p + ' still gives the support address');
   assert.match(privacy, /Google Analytics/);
   assert.match(fs.readFileSync(path.join('docs', 'download.html'), 'utf8'), /github\.com\/sc0rebreaker\/dota-translator-app/, 'the download page does not link the source');
   assert.match(fs.readFileSync(path.join('docs', 'download.html'), 'utf8'), /href="key\.html"/);
@@ -2482,7 +2484,7 @@ ok('the settings window is told only WHETHER there is a key, never the key', () 
   assert.doesNotMatch(pre, /geminiApiKey|getKey/);
   assert.match(pre, /saveKey: \(key\) => ipcRenderer\.invoke\('setup:key', key\)/);
   assert.match(main, /shell\.openExternal\('https:\/\/dotatranslator\.live\/key\.html'\)/);
-  assert.match(main, /const FEEDBACK_URL = 'mailto:support@dotatranslator\.live';/);
+  assert.match(main, /const FEEDBACK_URL = 'https:\/\/forms\.gle\/4UwGB5drooGT4mUB9';/);
   // With no key the window is the key and nothing else; with one, a line to change it.
   const html = fs.readFileSync(path.join('src', 'setup.html'), 'utf8');
   assert.match(html, /id="checkKey"[^>]*>Check and save</);
